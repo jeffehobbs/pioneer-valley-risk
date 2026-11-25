@@ -66,7 +66,7 @@
             RV.UI.addFloat(
               RV.centroid[action.to][0] * 16,
               RV.centroid[action.to][1] * 16 - 8,
-              '+' + action.n, '#37c8ff');
+              '+' + action.n, st.players[1].color);
             RV.Audio.play('move');
           } else {
             st.fortified = true; // illegal move: don't loop on it

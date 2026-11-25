@@ -36,8 +36,8 @@
     q: '#9aa0b4', // pole metal
     n: '#f2c79a', // skin
     k: '#23232e', // dark outline
-    R: '#e33b32', // die rim: red (attacker)
-    B: '#3b6de3', // die rim: blue (defender)
+    R: '#e33b32', // die rim: red (the Machine)
+    B: '#3b6de3', // die rim: blue (you)
     r: '#d64541', // roof
     a: '#f7f3e8', // house wall
     b: '#8a5a2b', // door
@@ -369,8 +369,8 @@
   };
   for (var face = 1; face <= 6; face++) {
     P.SPR.dice[face] = {
-      atk: makeDie(face, 'R'), // red rim  = attacker
-      def: makeDie(face, 'B'), // blue rim = defender
+      red: makeDie(face, 'R'),  // the Machine's dice
+      blue: makeDie(face, 'B'), // your dice
     };
   }
 

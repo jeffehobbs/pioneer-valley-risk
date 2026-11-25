@@ -47,6 +47,7 @@
     var atkN = Math.min(3, a.armies - 1);
     var defN = Math.min(2, b.armies);
     var atkName = st.players[st.turn].name, defName = st.players[b.owner].name;
+    var atkKind = st.players[st.turn].dice, defKind = st.players[b.owner].dice;
     var fromName = a.name, toName = b.name;
 
     var result = RV.Game.attack(st, from, to);
@@ -63,8 +64,8 @@
     var atkRow = overlay.querySelector('.atk-row');
     var defRow = overlay.querySelector('.def-row');
     var scale = 4;
-    setDice(atkRow, new Array(atkN).fill(1), 'atk', scale);
-    setDice(defRow, new Array(defN).fill(1), 'def', scale);
+    setDice(atkRow, new Array(atkN).fill(1), atkKind, scale);
+    setDice(defRow, new Array(defN).fill(1), defKind, scale);
     overlay.classList.add('show');
     RV.Audio.play('dice');
 
@@ -72,13 +73,13 @@
     (function tick() {
       if (RV.UI.state !== st) { overlay.classList.remove('show'); return; }
       if (Date.now() - t0 < ROLL) {
-        shuffleRow(atkRow, 'atk');
-        shuffleRow(defRow, 'def');
+        shuffleRow(atkRow, atkKind);
+        shuffleRow(defRow, defKind);
         setTimeout(tick, 70);
         return;
       }
-      setDice(atkRow, result.atk, 'atk', scale);
-      setDice(defRow, result.def, 'def', scale);
+      setDice(atkRow, result.atk, atkKind, scale);
+      setDice(defRow, result.def, defKind, scale);
       markLosers(atkRow, defRow, result);
       setTimeout(function () {
         overlay.classList.remove('show');

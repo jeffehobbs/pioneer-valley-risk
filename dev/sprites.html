@@ -19,7 +19,7 @@ function row(label, list) {
 });
 row('water', [RV.paintSprite(RV.SPR.river, 4), RV.paintSprite(RV.SPR.lake, 4)]);
 row('markers', [RV.paintSprite(RV.SPR.house, 4), RV.paintSprite(RV.SPR.star, 4),
-  RV.paintSprite(RV.SPR.soldier, 4, '#ff4d4d'), RV.paintSprite(RV.SPR.soldier, 4, '#37c8ff')]);
-row('attack', [1, 2, 3, 4, 5, 6].map(function (f) { return RV.paintSprite(RV.SPR.dice[f].atk, 4); }));
-row('defend', [1, 2, 3, 4, 5, 6].map(function (f) { return RV.paintSprite(RV.SPR.dice[f].def, 4); }));
+  RV.paintSprite(RV.SPR.soldier, 4, '#37c8ff'), RV.paintSprite(RV.SPR.soldier, 4, '#ff4d4d')]);
+row('you', [1, 2, 3, 4, 5, 6].map(function (f) { return RV.paintSprite(RV.SPR.dice[f].blue, 4); }));
+row('machine', [1, 2, 3, 4, 5, 6].map(function (f) { return RV.paintSprite(RV.SPR.dice[f].red, 4); }));
 </script></body></html>

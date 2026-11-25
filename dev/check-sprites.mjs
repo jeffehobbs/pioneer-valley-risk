@@ -23,6 +23,6 @@ for (const k of ['grass', 'forest', 'mountain', 'hills']) RV.SPR[k].forEach((s, 
 for (const k of ['river', 'lake', 'house', 'star']) check(k, RV.SPR[k]);
 check('soldier', RV.SPR.soldier, true);
 check('flag', RV.SPR.flag, true);
-for (let f = 1; f <= 6; f++) { check(`die${f}.atk`, RV.SPR.dice[f].atk); check(`die${f}.def`, RV.SPR.dice[f].def); }
+for (let f = 1; f <= 6; f++) { check(`die${f}.red`, RV.SPR.dice[f].red); check(`die${f}.blue`, RV.SPR.dice[f].blue); }
 console.log(bad ? `sprites: FAILED (${bad})` : 'sprites: OK');
 process.exit(bad ? 1 : 0);

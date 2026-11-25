@@ -46,8 +46,8 @@
       difficulty: difficulty || 'normal',
       territories: territories,
       players: [
-        { name: 'YOU', color: '#ff4d4d' },
-        { name: 'THE MACHINE', color: '#37c8ff' },
+        { name: 'YOU', color: '#37c8ff', dice: 'blue' },
+        { name: 'THE MACHINE', color: '#ff4d4d', dice: 'red' },
       ],
       turn: 0,
       round: 1,
