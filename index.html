@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Risk: Pioneer Valley</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%23141436'/%3E%3Crect x='3' y='6' width='10' height='8' fill='%2337e0ff'/%3E%3Crect x='5' y='2' width='6' height='4' fill='%2337e0ff'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app">
+  <header id="topbar">
+    <button id="btn-quit" class="btn small quit" title="Quit to the title screen">QUIT</button>
+    <div class="logo">
+      <canvas id="logo-canvas" width="16" height="16"></canvas>
+      <span>RISK: <b>PIONEER&nbsp;VALLEY</b></span>
+    </div>
+    <div class="hud">
+      <div id="hud-player" class="hud-side">
+        <span class="swatch" id="sw-player"></span>
+        <span id="hud-player-name"></span>
+        <span id="hud-player-stats" class="stats"></span>
+      </div>
+      <div id="hud-center">
+        <div id="turn-banner"></div>
+        <div id="phase-banner"></div>
+      </div>
+      <div id="hud-ai" class="hud-side">
+        <span id="hud-ai-stats" class="stats"></span>
+        <span id="hud-ai-name"></span>
+        <span class="swatch" id="sw-ai"></span>
+      </div>
+    </div>
+    <div class="top-actions">
+      <button id="btn-sound" class="btn small" title="Sound on/off">SND</button>
+    </div>
+  </header>
+
+  <main id="board-wrap">
+    <canvas id="board"></canvas>
+    <div id="side">
+      <section class="card">
+        <div class="phase-row">
+          <button id="btn-reinforce" class="btn phase active" data-phase="reinforce"
+            title="Click your towns to place armies (shift-click places them all). Holding a whole county adds its bonus.">REINFORCE</button>
+          <button id="btn-attack" class="btn phase" data-phase="attack"
+            title="Click one of your towns with 2+ armies, then a red-outlined neighbor. You roll up to 3 dice, the defender up to 2; ties go to the defender.">ATTACK</button>
+          <button id="btn-fortify" class="btn phase" data-phase="fortify"
+            title="Move armies once between two of your towns that are linked by your territory. Moving ends your turn.">FORTIFY</button>
+        </div>
+        <div id="reinforce-pool" class="pool" title="Armies left to place">POOL <b id="pool-count">0</b></div>
+        <button id="btn-end" class="btn end" title="End your turn">END TURN &#9654;</button>
+      </section>
+      <section id="info-card" class="card idle">
+        <h3 id="info-name">—</h3>
+        <div class="info-row"><span class="k">OWNER</span><span id="info-owner">—</span></div>
+        <div class="info-row"><span class="k">ARMIES</span><span id="info-armies">—</span></div>
+        <div class="info-row"><span class="k">COUNTY</span><span id="info-county">—</span></div>
+        <div class="info-row"><span class="k">BORDERS</span><span id="info-borders">—</span></div>
+      </section>
+      <section class="card" title="Hold every town in a county for a bonus each turn">
+        <h3>COUNTIES</h3>
+        <div id="regions"></div>
+      </section>
+    </div>
+  </main>
+
+  <footer id="log"></footer>
+
+  <div id="modal" class="modal hidden">
+    <div class="modal-card">
+      <h3 id="modal-title">MOVE ARMIES</h3>
+      <div id="modal-body"></div>
+      <div class="modal-btns">
+        <button id="modal-ok" class="btn">CONFIRM</button>
+        <button id="modal-cancel" class="btn">CANCEL</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="js/sprites.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/map-data.js"></script>
+<script src="js/map.js"></script>
+<script src="js/game.js"></script>
+<script src="js/ai.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/combat.js"></script>
+<script src="js/ai-turn.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>

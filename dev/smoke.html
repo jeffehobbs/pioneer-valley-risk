@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<!-- Browser smoke test: loads the real game in an iframe and plays it
+     through real click events (menu, reinforce, attack, advance modal,
+     end turn, the Machine's turns). Result goes to <title> and #out.
+     Needs http (iframe access): run dev/smoke.sh -->
+<html>
+<head>
+<meta charset="utf-8">
+<title>SMOKE: running</title>
+<style>
+  body { margin: 0; background: #000; color: #0f0; font: 12px monospace; }
+  iframe { width: 1440px; height: 900px; border: 0; display: block; }
+  #out { white-space: pre; padding: 6px; }
+</style>
+</head>
+<body>
+<iframe id="game" src="../index.html?smoke"></iframe>
+<div id="out"></div>
+<script>
+(function () {
+  var params = new URLSearchParams(location.search);
+  var MAX_ROUNDS = Number(params.get('rounds') || 6);
+  var DIFF = params.get('diff') || 'normal';
+  var frame = document.getElementById('game');
+  var errors = [], notes = [], w, doc;
+  var stats = { clicks: 0, attacks: 0, captures: 0, advances: 0, fortifies: 0, aiTurns: 0 };
+
+  function done(status) {
+    var line = 'SMOKE: ' + status + ' | errors=' + (errors.length ? errors[0].slice(0, 300) : 'none') +
+      ' | ' + JSON.stringify(stats);
+    document.title = line;
+    document.getElementById('out').textContent = line + '\n' + notes.join('\n') + '\n' + errors.join('\n');
+  }
+
+  function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+  async function until(fn, ms, what) {
+    var t0 = Date.now();
+    while (!fn()) {
+      if (Date.now() - t0 > ms) throw new Error('timeout waiting for ' + what);
+      await wait(25);
+    }
+  }
+
+  function clickTown(i, shift) {
+    var cv = doc.getElementById('board');
+    var r = cv.getBoundingClientRect();
+    var c = w.RV.centroid[i];
+    var x = r.left + c[0] * 16 / (w.RV.MAP_W * 16) * r.width;
+    var y = r.top + c[1] * 16 / (w.RV.MAP_H * 16) * r.height;
+    cv.dispatchEvent(new w.MouseEvent('mousemove', { clientX: x, clientY: y, bubbles: true }));
+    cv.dispatchEvent(new w.MouseEvent('click', { clientX: x, clientY: y, bubbles: true, shiftKey: !!shift }));
+    stats.clicks++;
+  }
+  function clickBtn(id) { doc.getElementById(id).click(); stats.clicks++; }
+  function modalOpen() { return !doc.getElementById('modal').classList.contains('hidden'); }
+  function enemiesOf(st, i) { return w.RV.adj[i].filter(function (j) { return st.territories[j].owner !== 0; }); }
+
+  async function humanTurn() {
+    var st = w.RV.UI.state;
+    // reinforce: one click at a time on the strongest front town
+    var mine = w.RV.Game.territoriesOf(st, 0).filter(function (i) { return enemiesOf(st, i).length; });
+    mine.sort(function (a, b) { return st.territories[b].armies - st.territories[a].armies; });
+    var guard = 0;
+    while (st.pool > 0 && guard++ < 60) { clickTown(mine[0]); await wait(5); }
+    if (st.phase !== 'attack') throw new Error('did not auto-advance to attack (phase ' + st.phase + ')');
+
+    // attack while there is a 2:1 edge
+    for (var n = 0; n < 40 && st.over == null; n++) {
+      var best = null;
+      w.RV.Game.territoriesOf(st, 0).forEach(function (from) {
+        var a = st.territories[from].armies;
+        enemiesOf(st, from).forEach(function (to) {
+          if (a - 1 >= st.territories[to].armies * 2 && (!best || a > best.a)) best = { from: from, to: to, a: a };
+        });
+      });
+      if (!best) break;
+      var owner0 = st.territories[best.to].owner;
+      clickTown(best.from);
+      clickTown(best.to);
+      stats.attacks++;
+      await until(function () { return !w.RV.UI.busy() || modalOpen() || st.over != null; }, 8000, 'attack to settle');
+      if (st.territories[best.to].owner !== owner0) stats.captures++;
+      if (modalOpen()) {
+        if (doc.getElementById('modal-title').textContent !== 'ADVANCE') throw new Error('unexpected modal');
+        clickBtn('modal-ok');
+        stats.advances++;
+        await until(function () { return !w.RV.UI.busy() || st.over != null; }, 4000, 'advance to settle');
+      }
+    }
+    if (st.over != null) return;
+
+    // fortify once if an interior stack exists (this ends the turn)
+    clickBtn('btn-fortify');
+    if (st.phase !== 'fortify') throw new Error('fortify button did not switch phase');
+    var interior = w.RV.Game.territoriesOf(st, 0).filter(function (i) {
+      return !enemiesOf(st, i).length && st.territories[i].armies > 1;
+    });
+    var moved = false;
+    for (var k = 0; k < interior.length && !moved; k++) {
+      var to = w.RV.Game.territoriesOf(st, 0).find(function (j) {
+        return enemiesOf(st, j).length && w.RV.Game.connected(st, interior[k], j);
+      });
+      if (to == null) continue;
+      clickTown(interior[k]);
+      clickTown(to);
+      if (!modalOpen()) throw new Error('fortify modal did not open');
+      clickBtn('modal-ok');
+      stats.fortifies++;
+      moved = true;
+    }
+    if (!moved) clickBtn('btn-end');
+    await until(function () { return st.turn === 1 || st.over != null; }, 4000, 'turn to pass');
+  }
+
+  frame.addEventListener('load', async function () {
+    try {
+      w = frame.contentWindow; doc = w.document;
+      w.addEventListener('error', function (e) { errors.push((e.error && e.error.stack) || e.message); });
+      await until(function () { return doc.getElementById('menu-start'); }, 5000, 'menu');
+      doc.querySelector('.diff[data-diff="' + DIFF + '"]').click();
+      clickBtn('menu-start');
+      await until(function () { return w.RV.UI.state; }, 2000, 'game start');
+      var st = w.RV.UI.state;
+      if (params.get('mode') === 'quit') {
+        // Quit while the Machine is mid-turn, start a new game, and make sure
+        // the old turn's loop doesn't leak into it.
+        while (st.pool > 0) clickTown(w.RV.Game.territoriesOf(st, 0)[0]);
+        clickBtn('btn-end');
+        await until(function () { return st.turn === 1; }, 2000, 'Machine turn');
+        await wait(900);
+        clickBtn('btn-quit');
+        if (!modalOpen() || doc.getElementById('modal-title').textContent !== 'QUIT GAME?') throw new Error('no quit confirm');
+        clickBtn('modal-cancel');
+        if (!w.RV.UI.state) throw new Error('cancel quit still quit');
+        clickBtn('btn-quit');
+        clickBtn('modal-ok');
+        await until(function () { return doc.getElementById('menu-start'); }, 2000, 'menu after quit');
+        clickBtn('menu-start');
+        var st2 = w.RV.UI.state;
+        await wait(6000);
+        if (st2.turn !== 0 || st2.phase !== 'reinforce' || w.RV.UI.busy()) {
+          throw new Error('new game disturbed: turn ' + st2.turn + ' phase ' + st2.phase + ' busy ' + w.RV.UI.busy());
+        }
+        if (errors.length) throw new Error('page errors');
+        done('OK (quit mid-turn)');
+        return;
+      }
+      notes.push('start: you ' + w.RV.Game.territoriesOf(st, 0).length + ' towns, pool ' + st.pool);
+      while (st.over == null && st.round <= MAX_ROUNDS) {
+        await humanTurn();
+        if (st.over != null) break;
+        await until(function () { return st.turn === 0 || st.over != null; }, 120000, 'Machine turn');
+        stats.aiTurns++;
+        await until(function () { return !w.RV.UI.busy() || st.over != null; }, 5000, 'idle');
+        notes.push('round ' + st.round + ': you ' + w.RV.Game.territoriesOf(st, 0).length +
+          ' towns / ' + w.RV.Game.totalArmies(st, 0) + ' armies, machine ' +
+          w.RV.Game.territoriesOf(st, 1).length + ' / ' + w.RV.Game.totalArmies(st, 1));
+      }
+      if (st.over != null) {
+        await until(function () { return doc.querySelector('.gameover'); }, 5000, 'game over screen');
+        notes.push('game over: winner ' + st.over);
+      }
+      if (errors.length) throw new Error('page errors');
+      done(st.over != null ? 'OK (game over, winner ' + st.over + ')' : 'OK (' + MAX_ROUNDS + ' rounds)');
+    } catch (err) {
+      errors.push(err.stack || err.message);
+      done('FAILED');
+    }
+  });
+})();
+</script>
+</body>
+</html>

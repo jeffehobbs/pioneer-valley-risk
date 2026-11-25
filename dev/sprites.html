@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<!-- Dev gallery: every sprite at 4x. Open via http or file. -->
+<html><head><meta charset="utf-8"><title>Sprites</title>
+<style>body{background:#0c1420;color:#ccc;font:12px monospace;padding:16px}
+.row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px;align-items:end}
+canvas{image-rendering:pixelated;outline:1px solid #234}</style></head>
+<body><div id="g"></div>
+<script src="../js/sprites.js"></script>
+<script>
+var g = document.getElementById('g');
+function row(label, list) {
+  var r = document.createElement('div'); r.className = 'row';
+  r.innerHTML = '<b style="width:80px">' + label + '</b>';
+  list.forEach(function (c) { r.appendChild(c); });
+  g.appendChild(r);
+}
+['grass', 'forest', 'mountain', 'hills'].forEach(function (k) {
+  row(k, RV.SPR[k].map(function (s) { return RV.paintSprite(s, 4); }));
+});
+row('water', [RV.paintSprite(RV.SPR.river, 4), RV.paintSprite(RV.SPR.lake, 4)]);
+row('markers', [RV.paintSprite(RV.SPR.house, 4), RV.paintSprite(RV.SPR.star, 4),
+  RV.paintSprite(RV.SPR.soldier, 4, '#ff4d4d'), RV.paintSprite(RV.SPR.soldier, 4, '#37c8ff')]);
+row('attack', [1, 2, 3, 4, 5, 6].map(function (f) { return RV.paintSprite(RV.SPR.dice[f].atk, 4); }));
+row('defend', [1, 2, 3, 4, 5, 6].map(function (f) { return RV.paintSprite(RV.SPR.dice[f].def, 4); }));
+</script></body></html>
