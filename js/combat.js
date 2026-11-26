@@ -1,4 +1,4 @@
-/* Risk: Pioneer Valley — combat: dice animation + resolution.
+/* Pioneer Valley Risk — combat: dice animation + resolution.
  *
  * Two ways in, one way out:
  *  - doAttack(st, from, to, onDone, opts)  one roll (you, or the Machine at 1X)

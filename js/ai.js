@@ -1,4 +1,4 @@
-/* Risk: Pioneer Valley — the Machine (computer opponent).
+/* Pioneer Valley Risk — the Machine (computer opponent).
  *
  * RV.AI.step(state) inspects the current state and returns ONE action:
  *   {type:'trade'}               (cash in a set of cards)

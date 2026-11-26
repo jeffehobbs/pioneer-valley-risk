@@ -1,4 +1,4 @@
-/* Risk: Pioneer Valley — tiny WebAudio chip-tune synth: sound effects and
+/* Pioneer Valley Risk — tiny WebAudio chip-tune synth: sound effects and
  * a looping chip-tune march. No assets needed. */
 (function () {
   'use strict';

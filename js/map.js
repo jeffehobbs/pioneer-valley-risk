@@ -1,4 +1,4 @@
-/* Risk: Pioneer Valley — map geometry.
+/* Pioneer Valley Risk — map geometry.
  *
  * Builds the cell grid from RV.MAP_ROWS (map-data.js) and computes:
  *  - RV.grid[y][x]        -> territory index or -1

@@ -1,4 +1,4 @@
-/* Risk: Pioneer Valley — the Machine talks.
+/* Pioneer Valley Risk — the Machine talks.
  *
  * RV.Taunts.pick(kind, arg) returns a line or null. Callers decide when to
  * speak; this module only rations the lines so the same one doesn't repeat

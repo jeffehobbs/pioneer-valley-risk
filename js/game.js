@@ -1,4 +1,4 @@
-/* Risk: Pioneer Valley — game state and rules.
+/* Pioneer Valley Risk — game state and rules.
  *
  * Two players (0 = human, 1 = AI) on the towns of the Pioneer Valley.
  * Classic Risk loop: reinforce -> attack -> fortify -> end turn.

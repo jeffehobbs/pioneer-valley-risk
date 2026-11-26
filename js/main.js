@@ -1,4 +1,4 @@
-/* Risk: Pioneer Valley — title screen, boot, saved game and record.
+/* Pioneer Valley Risk — title screen, boot, saved game and record.
  *
  * The game in progress is saved to localStorage after every change, so a
  * reload (or QUIT) can CONTINUE it. Finished games are tallied per

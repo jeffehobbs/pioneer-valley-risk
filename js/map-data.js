@@ -1,4 +1,4 @@
-/* Risk: Pioneer Valley — map data.
+/* Pioneer Valley Risk — map data.
  *
  * The board is an ASCII grid (RV.MAP_ROWS). Each character is one cell:
  *   a territory key (see RV.TERRITORIES), '~' river, '=' reservoir, '.' void.

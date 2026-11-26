@@ -1,4 +1,4 @@
-# Risk: Pioneer Valley
+# Pioneer Valley Risk
 
 A two-player, pixel-art take on classic Risk, played across 32 towns of Franklin, Hampshire and
 Hampden counties. You go first against the Machine. Plain HTML, CSS and JavaScript with no build

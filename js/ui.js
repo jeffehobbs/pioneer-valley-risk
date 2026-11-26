@@ -1,4 +1,4 @@
-/* Risk: Pioneer Valley — board rendering and human input. */
+/* Pioneer Valley Risk — board rendering and human input. */
 (function () {
   'use strict';
 

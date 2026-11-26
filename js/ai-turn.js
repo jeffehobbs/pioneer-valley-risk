@@ -1,4 +1,4 @@
-/* Risk: Pioneer Valley — runs the Machine's turn, step by step.
+/* Pioneer Valley Risk — runs the Machine's turn, step by step.
  *
  * Speed (1X / 2X / 4X, remembered): at 1X every roll gets its own dice; at
  * 2X and 4X the rolls against one town are resolved together and shown as

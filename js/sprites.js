@@ -1,4 +1,4 @@
-/* Risk: Pioneer Valley — pixel-art sprites.
+/* Pioneer Valley Risk — pixel-art sprites.
  *
  * Sprites are 16x16 (or smaller) ASCII grids; each character is a palette
  * key, '.' is transparent. RV.paintSprite() renders one to a canvas,
