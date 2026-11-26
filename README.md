@@ -28,8 +28,7 @@ Then browse to http://localhost:8000.
   must trade before placing.
 - **Attack:** click one of your towns with 2+ armies, then an outlined neighbor. The attacker rolls
   up to 3 dice and the defender up to 2. The highest dice are compared pairwise, and ties go to the
-  defender. After a capture, you choose how many more armies to advance. **Blitz** (shift-click a
-  target, or the BLITZ toggle / B) keeps rolling until the town falls or you're down to 3 armies.
+  defender. After a capture, you choose how many more armies to advance.
 - **Terrain:** the ground favors the defender.
   - Mountains: the defender rolls 3 dice, and the best two count.
   - Hills: +1 on the defender's top die.
@@ -73,7 +72,7 @@ dev/smoke.sh
 
 This runs the map check (contiguity, connectivity, label anchors), the sprite palette check, and a
 headless simulation of 60 games through the real rules and AI. It then opens the actual page in
-headless Chrome and plays 6 rounds with real click events: trades, undo, blitz, every AI speed, and
+headless Chrome and plays 6 rounds with real click events: trades, undo, every AI speed, and
 skip. Two more runs quit in the middle of the Machine's turn, and reload and CONTINUE in the middle
 of it. Use `dev/smoke.sh 80 hard` to play a whole game. `dev/sprites.html` is a gallery of every
 sprite.

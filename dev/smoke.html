@@ -23,7 +23,7 @@
   var DIFF = params.get('diff') || 'normal';
   var frame = document.getElementById('game');
   var errors = [], notes = [], w, doc;
-  var stats = { clicks: 0, attacks: 0, blitzes: 0, captures: 0, advances: 0, fortifies: 0,
+  var stats = { clicks: 0, attacks: 0, captures: 0, advances: 0, fortifies: 0,
                 aiTurns: 0, trades: 0, undos: 0, skips: 0, taunts: 0 };
 
   function done(status) {
@@ -92,11 +92,9 @@
       });
       if (!best) break;
       var owner0 = st.territories[best.to].owner;
-      var blitz = n % 2 === 1;   // every other attack is a shift-click blitz
       clickTown(best.from);
-      clickTown(best.to, blitz);
+      clickTown(best.to);
       stats.attacks++;
-      if (blitz) stats.blitzes++;
       await until(function () { return !w.RV.UI.busy() || modalOpen() || st.over != null; }, 8000, 'attack to settle');
       if (st.territories[best.to].owner !== owner0) stats.captures++;
       if (modalOpen()) {

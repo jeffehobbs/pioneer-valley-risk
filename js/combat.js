@@ -1,11 +1,10 @@
 /* Risk: Pioneer Valley — combat: dice animation + resolution.
  *
- * Three ways in, one way out:
+ * Two ways in, one way out:
  *  - doAttack(st, from, to, onDone, opts)  one roll (you, or the Machine at 1X)
- *  - doBlitz(st, from, to, onDone)         you roll until it's decided
  *  - showBattle(st, battle, onDone, opts)  the Machine's rolls, already resolved
- * All of them end in show(), which animates the dice, shows the ground's
- * effect and any blitz summary, then logs, taunts, flashes and calls onDone.
+ * Both end in show(), which animates the dice, shows the ground's effect and
+ * any battle summary, then logs, taunts, flashes and calls onDone.
  */
 (function () {
   'use strict';
@@ -75,19 +74,6 @@
     info.defLoss = result.defLoss;
     info.captured = result.captured;
     show(st, info, onDone, opts || {});
-  }
-
-  // Roll until the town falls or the attacker is down to a few armies.
-  function doBlitz(st, from, to, onDone) {
-    var info = names(st, from, to);
-    var b = RV.Game.blitz(st, from, to);
-    if (!b) { if (onDone) onDone(); return; }
-    info.last = b.last;
-    info.summary = b;
-    info.atkLoss = b.atkLoss;
-    info.defLoss = b.defLoss;
-    info.captured = b.captured;
-    show(st, info, onDone, { blitz: true });
   }
 
   // The Machine's batch of rolls on one target (resolved by ai-turn).
@@ -222,9 +208,8 @@
     var s = info.summary;
     var msg;
     if (s) {
-      msg = (you ? 'You blitz ' : 'The Machine hits ') + info.toName + ' from ' + info.fromName +
-        ': ' + s.rolls + ' rolls, ' + (you ? 'you lose ' : 'it loses ') + info.atkLoss +
-        ', ' + (you ? 'they lose ' : 'you lose ') + info.defLoss;
+      msg = 'The Machine hits ' + info.toName + ' from ' + info.fromName +
+        ': ' + s.rolls + ' rolls, it loses ' + info.atkLoss + ', you lose ' + info.defLoss;
     } else {
       msg = (you ? 'You attack ' : 'The Machine attacks ') + info.toName + ' from ' + info.fromName +
         ': ' + last.atk.join(',') + ' vs ' + last.def.join(',');
@@ -278,11 +263,11 @@
     var s = info.summary;
     el.className = 'dice-summary show' + (info.captured ? ' won' : '');
     el.innerHTML =
-      '<b>' + (info.by === 0 ? 'BLITZ' : 'BATTLE') + ' &times;' + s.rolls + '</b> ' +
+      '<b>BATTLE &times;' + s.rolls + '</b> ' +
       '<span class="atk">-' + info.atkLoss + '</span> / ' +
       '<span class="def">-' + info.defLoss + '</span>' +
       (info.captured ? ' <b class="cap">CAPTURED</b>' : '');
   }
 
-  RV.Combat = { doAttack: doAttack, doBlitz: doBlitz, showBattle: showBattle, names: names };
+  RV.Combat = { doAttack: doAttack, showBattle: showBattle, names: names };
 })();

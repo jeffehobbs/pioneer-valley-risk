@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>Risk: Pioneer Valley</title>
 <meta name="description" content="A playable pixel-art game of Risk set in the Pioneer Valley of western Massachusetts.">
 <meta property="og:type" content="website">
@@ -60,12 +60,8 @@
         <div class="phase-row">
           <button id="btn-reinforce" class="btn phase active" data-phase="reinforce"
             title="Click your towns to place armies (shift-click places them all). Holding a whole county adds its bonus.">REINFORCE</button>
-          <div class="attack-row">
-            <button id="btn-attack" class="btn phase" data-phase="attack"
-              title="Click one of your towns with 2+ armies, then a red-outlined neighbor. You roll up to 3 dice, the defender up to 2; ties go to the defender. Mountains, hills, forests and rivers favor the defender.">ATTACK</button>
-            <button id="btn-blitz" class="btn small toggle"
-              title="Blitz: keep rolling until the town falls or you're down to 3 armies (B). Shift-click a target to blitz once.">BLITZ</button>
-          </div>
+          <button id="btn-attack" class="btn phase" data-phase="attack"
+            title="Click one of your towns with 2+ armies, then a red-outlined neighbor. You roll up to 3 dice, the defender up to 2; ties go to the defender. Mountains, hills, forests and rivers favor the defender.">ATTACK</button>
           <button id="btn-fortify" class="btn phase" data-phase="fortify"
             title="Move armies once between two of your towns that are linked by your territory. Moving ends your turn.">FORTIFY</button>
         </div>

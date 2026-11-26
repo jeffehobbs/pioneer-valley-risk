@@ -20,6 +20,17 @@ html, body {
   overflow: hidden;
 }
 
+/* Phones: no double-tap zoom (fast taps place armies), no text selection or
+   callout on a long press, no font inflation when the phone turns. */
+* { touch-action: manipulation; }
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
 body {
   background: var(--bg);
   color: var(--text);
@@ -524,16 +535,8 @@ canvas { image-rendering: pixelated; image-rendering: crisp-edges; }
   }
 }
 
-/* ------------------------------------------------------- cards, blitz -- */
+/* -------------------------------------------------------------- cards -- */
 .modal { z-index: 70; }
-
-.attack-row { display: flex; gap: 8px; }
-.attack-row #btn-attack { flex: 1; }
-.btn.toggle.on {
-  background: #6b1c2e;
-  color: #ffd0d4;
-  box-shadow: 0 3px 0 var(--line), inset 0 0 0 2px var(--red);
-}
 
 .pool-row {
   display: flex;

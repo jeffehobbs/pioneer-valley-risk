@@ -27,10 +27,34 @@
     if (!ctx) {
       var AC = window.AudioContext || window.webkitAudioContext;
       if (!AC) return null;
+      // iOS files Web Audio as "ambient", so the ring/silent switch mutes it.
+      // A game is "playback", like a video: it plays with the switch on silent.
+      try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) { /* older Safari */ }
       ctx = new AC();
     }
-    if (ctx.state === 'suspended') ctx.resume();
+    // iOS can also leave it 'interrupted' (a call, the app in the background).
+    if (ctx.state !== 'running' && ctx.state !== 'closed') ctx.resume();
     return ctx;
+  }
+
+  // iOS only starts audio inside a touch handler, and only when a sound
+  // actually plays there. Every touch or click that finds the context not
+  // running wakes it with one silent sample, so audio comes back after an
+  // interruption too.
+  function unlock() {
+    if (!enabled && !musicOn) return;
+    if (ctx && ctx.state === 'running') return;
+    var c = context();
+    if (!c) return;
+    var src = c.createBufferSource();
+    src.buffer = c.createBuffer(1, 1, c.sampleRate);
+    src.connect(c.destination);
+    src.start(0);
+  }
+  if (typeof document !== 'undefined' && document.addEventListener) {
+    ['touchend', 'pointerup', 'click', 'keydown'].forEach(function (type) {
+      document.addEventListener(type, unlock, true);
+    });
   }
 
   // tone(freq, dur, opts): type, vol, slideTo, delay

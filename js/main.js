@@ -191,6 +191,10 @@
               recordResult: recordResult, readSave: readSave };
 
   if (typeof document === 'undefined' || !document.getElementById) return; // non-browser (tests)
+  // iOS Safari ignores user-scalable=no, so stop pinch-zoom here.
+  ['gesturestart', 'gesturechange'].forEach(function (type) {
+    document.addEventListener(type, function (e) { e.preventDefault(); }, { passive: false });
+  });
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', boot);
   } else {

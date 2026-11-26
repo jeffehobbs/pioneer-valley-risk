@@ -18,11 +18,9 @@
   var flashes = [];        // capture flashes: {i, color, life}
   var shake = 0;           // frames of screen shake left
   var townCells = [];      // [[x, y], ...] per territory, for flashes
-  var blitzOn = false;
   var sayTimer = null;
   var reduceMotion = typeof matchMedia === 'function' &&
     matchMedia('(prefers-reduced-motion: reduce)').matches;
-  try { blitzOn = localStorage.getItem('pvrisk.blitz') === '1'; } catch (e) { /* private mode */ }
 
   var GROUND = {
     mountain: ['MOUNTAIN · +1 DIE', 'Defender rolls 3 dice; the best two count.'],
@@ -450,16 +448,7 @@
       e.preventDefault();
       RV.AITurn.skip();
       refreshHUD();
-    } else if ((e.key === 'b' || e.key === 'B') && !e.metaKey && !e.ctrlKey) {
-      toggleBlitz();
     }
-  }
-
-  function toggleBlitz() {
-    blitzOn = !blitzOn;
-    try { localStorage.setItem('pvrisk.blitz', blitzOn ? '1' : '0'); } catch (err) { /* ignore */ }
-    RV.Audio.play('click');
-    refreshHUD();
   }
 
   function doUndo() {
@@ -534,8 +523,7 @@
         }
       } else if (sel >= 0 && RV.adj[sel].indexOf(t) >= 0) {
         var from = sel;
-        var how = (e.shiftKey || blitzOn) ? 'doBlitz' : 'doAttack';
-        RV.Combat[how](st, from, t, function () {
+        RV.Combat.doAttack(st, from, t, function () {
           // keep the source selected for follow-up attacks
           sel = st.territories[from].armies >= 2 ? from : -1;
           dirty = true;
@@ -618,7 +606,6 @@
     spd.addEventListener('click', function () { RV.AITurn.cycleSpeed(); RV.Audio.play('click'); paintSpd(); });
     document.getElementById('btn-undo').addEventListener('click', doUndo);
     document.getElementById('btn-trade').addEventListener('click', doTrade);
-    document.getElementById('btn-blitz').addEventListener('click', toggleBlitz);
     document.getElementById('btn-quit').addEventListener('click', function () {
       if (!ui.state || ui.state.over != null) { RV.Main.showMenu(); return; }
       openModal({
@@ -838,9 +825,6 @@
     });
     document.getElementById('btn-end').disabled = !myTurn || st.over != null || st.pool > 0;
     document.getElementById('btn-undo').disabled = !myTurn || !RV.Game.canUndo(st);
-    var blitzBtn = document.getElementById('btn-blitz');
-    blitzBtn.classList.toggle('on', blitzOn);
-    blitzBtn.textContent = blitzOn ? 'BLITZ ON' : 'BLITZ';
     refreshCards(st, myTurn);
 
     // info card

@@ -399,30 +399,6 @@
              from: from, to: to };
   }
 
-  // Keep rolling until the town falls, the attacker is down to 3 armies
-  // (or 1, if it started with 3 or fewer), or the game ends.
-  function blitzStop(state, from) {
-    return state.territories[from].armies > 3 ? 3 : 1;
-  }
-
-  function blitz(state, from, to, stopAt) {
-    if (stopAt == null) stopAt = blitzStop(state, from);
-    var out = { rolls: 0, atkLoss: 0, defLoss: 0, captured: false, last: null,
-                from: from, to: to, startA: state.territories[from].armies,
-                startD: state.territories[to].armies };
-    while (state.territories[from].armies > stopAt && state.territories[to].owner !== state.turn) {
-      var r = attack(state, from, to);
-      if (!r) break;
-      out.rolls++;
-      out.atkLoss += r.atkLoss;
-      out.defLoss += r.defLoss;
-      out.last = r;
-      if (r.captured) { out.captured = true; out.moved = r.moved; break; }
-      if (state.over != null) break;
-    }
-    return out.rolls ? out : null;
-  }
-
   // Resolve a pending post-capture advance (n may be 0).
   function advance(state, n) {
     var adv = state.advance;
@@ -474,8 +450,6 @@
     connected: connected,
     moveArmies: moveArmies,
     attack: attack,
-    blitz: blitz,
-    blitzStop: blitzStop,
     combatMods: combatMods,
     canUndo: canUndo,
     undoPlacement: undoPlacement,
