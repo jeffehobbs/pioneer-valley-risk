@@ -3,7 +3,7 @@
  * The board is an ASCII grid (RV.MAP_ROWS). Each character is one cell:
  *   a territory key (see RV.TERRITORIES), '~' river, '=' reservoir, '.' void.
  * Two towns border each other when their cells touch (including diagonally)
- * or when they face each other across a single river cell (a bridge).
+ * or, across a river, only where RV.BRIDGES lists a real bridge between them.
  * The Quabbin is wider than one cell, so it is never crossable.
  *
  * Layout is a stylized but geographically faithful sketch of the three
@@ -105,4 +105,19 @@ RV.TERRITORIES = [
   { id:'J', name:'Wilbraham',        terrain:'hills',    region:'hampden' },
   { id:'Z', name:'Longmeadow',       terrain:'plains',   region:'hampden' },
   { id:'P', name:'Hampden',          terrain:'hills',    region:'hampden' },
+];
+
+// The real bridges between towns that face each other across a river.
+// Facing across water with no bridge here (Hatfield–Hadley, say) is no border.
+RV.BRIDGES = [
+  ['Greenfield',       'Montague',         'General Pierce Bridge'],
+  ['Greenfield',       'Deerfield',        'Routes 5 & 10 and I-91, over the Deerfield'],
+  ['Deerfield',        'Sunderland',       'Sunderland Bridge, Route 116'],
+  ['Northampton',      'Hadley',           'Calvin Coolidge Bridge, Route 9'],
+  ['South Hadley',     'Holyoke',          'County Bridge, Route 116'],
+  ['Holyoke',          'Chicopee',         'Willimansett Bridge and I-391'],
+  ['West Springfield', 'Chicopee',         'Mass Pike, I-90'],
+  ['West Springfield', 'Springfield',      'Memorial and North End bridges'],
+  ['West Springfield', 'Agawam',           'Route 5 and Route 147, over the Westfield'],
+  ['Agawam',           'Springfield',      'South End Bridge'],
 ];

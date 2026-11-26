@@ -39,7 +39,8 @@ Then browse to http://localhost:8000.
 - **Fortify:** make one move between two of your towns that are linked through your own territory.
   The move ends your turn.
 - Towns border each other on land, or across the Connecticut, Deerfield or Westfield rivers
-  (bridges). The Quabbin can't be crossed.
+  where a real bridge crosses (10 of them, listed in `js/map-data.js`). The Quabbin can't be
+  crossed.
 - Own every town to win.
 
 Difficulty sets how aggressive the computer is and how many extra starting armies it gets to offset

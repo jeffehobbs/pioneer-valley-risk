@@ -58,6 +58,18 @@
     if (a !== b) { direct[a][b] = true; direct[b][a] = true; }
   }
 
+  // Pairs with a real bridge (RV.BRIDGES, by name) -> "minIndex,maxIndex".
+  var realBridge = {};
+  (RV.BRIDGES || []).forEach(function (pair) {
+    var a = -1, b = -1;
+    RV.TERRITORIES.forEach(function (tt, k) {
+      if (tt.name === pair[0]) a = k;
+      if (tt.name === pair[1]) b = k;
+    });
+    if (a < 0 || b < 0) throw new Error('RV.BRIDGES: unknown town in ' + pair.join(' / '));
+    realBridge[Math.min(a, b) + ',' + Math.max(a, b)] = true;
+  });
+
   var DIRS = [[1, 0], [0, 1], [1, 1], [1, -1]];
   for (y = 0; y < H; y++) {
     for (x = 0; x < W; x++) {
@@ -78,8 +90,9 @@
           var ax = x + DIRS[j][0] * 2, ay = y + DIRS[j][1] * 2;
           if (ax >= 0 && ay >= 0 && ax < W && ay < H && grid[ay][ax] >= 0 && grid[ay][ax] !== t) {
             var o2 = grid[ay][ax];
-            link(t, o2);
             var bk = Math.min(t, o2) + ',' + Math.max(t, o2);
+            if (!realBridge[bk]) continue;   // facing across the water, but no bridge
+            link(t, o2);
             (bridgeCells[bk] = bridgeCells[bk] || []).push([nx, ny, DIRS[j][0] !== 0 ? 'h' : 'v']);
           }
         }
