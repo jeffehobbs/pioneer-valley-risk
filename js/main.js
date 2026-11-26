@@ -174,16 +174,7 @@
     if (!document.getElementById('menu')) buildMenu();
   }
 
-  function paintLogo() {
-    var cv = document.getElementById('logo-canvas');
-    if (!cv) return;
-    var ctx = cv.getContext('2d');
-    ctx.imageSmoothingEnabled = false;
-    ctx.drawImage(RV.paintSprite(RV.SPR.star, 1), 0, 0);
-  }
-
   function boot() {
-    paintLogo();
     RV.UI.init();
     showMenu();
   }

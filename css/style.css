@@ -58,17 +58,6 @@ canvas { image-rendering: pixelated; image-rendering: crisp-edges; }
   min-height: 52px;
 }
 
-.logo {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 11px;
-  color: var(--dim);
-  white-space: nowrap;
-}
-.logo b { color: var(--gold); }
-#logo-canvas { width: 26px; height: 26px; }
-
 .hud {
   flex: 1;
   display: flex;
@@ -516,7 +505,6 @@ canvas { image-rendering: pixelated; image-rendering: crisp-edges; }
   html, body { overflow: auto; }
   #app { height: auto; min-height: 100%; }
   #topbar { flex-wrap: wrap; gap: 8px; }
-  .logo span { display: none; }
   .hud { order: 3; flex-basis: 100%; }
   .hud-side { min-width: 0; font-size: 7px; padding: 4px 6px; }
   .hud-side .stats { display: none; }
@@ -538,7 +526,7 @@ canvas { image-rendering: pixelated; image-rendering: crisp-edges; }
   }
 }
 
-/* -------------------------------------------------------------- cards -- */
+/* ------------------------------------------------------------ extras -- */
 .modal { z-index: 70; }
 
 .pool-row {
@@ -549,44 +537,6 @@ canvas { image-rendering: pixelated; image-rendering: crisp-edges; }
   margin-top: 12px;
 }
 .pool-row .pool { margin-top: 0; }
-
-#hand {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  min-height: 70px;
-  margin-bottom: 10px;
-}
-.hand-empty { color: var(--dim); font-size: 8px; align-self: center; }
-.rcard {
-  width: 70px;
-  background: #e9e2cc;
-  border: 3px solid var(--line);
-  box-shadow: 0 3px 0 var(--line);
-  padding: 4px 2px 3px;
-  text-align: center;
-  color: #1c1c28;
-}
-.rcard-art { display: block; margin: 0 auto 3px; width: 32px; height: 32px; border: 2px solid #1c1c28; }
-.rcard-name {
-  font-size: 5px;
-  line-height: 1.5;
-  height: 15px;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.rcard-kind { font-size: 5px; color: #6b5a3a; margin-top: 2px; }
-.rcard.owned .rcard-name { color: #1a5fc8; }
-.rcard.wild { background: #fff2b0; }
-.rcard.inset { box-shadow: 0 3px 0 var(--line), 0 0 0 2px var(--gold); transform: translateY(-3px); }
-.btn.trade { width: 100%; background: #1d4a26; color: var(--green); }
-.btn.trade:hover { background: #266b33; }
-.btn.trade.urgent { animation: urgent 0.6s steps(2) infinite; }
-@keyframes urgent { 50% { background: #3f8a2a; color: #fff; } }
-.nudge { animation: nudge 0.45s steps(3) 2; }
-@keyframes nudge { 50% { transform: translateX(4px); box-shadow: 0 0 0 3px var(--gold); } }
 
 /* ------------------------------------------------------- dice extras -- */
 .dice-card { flex-direction: column; gap: 12px; }

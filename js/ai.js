@@ -1,7 +1,6 @@
 /* Pioneer Valley Risk — the computer (computer opponent).
  *
  * RV.AI.step(state) inspects the current state and returns ONE action:
- *   {type:'trade'}               (cash in a set of cards)
  *   {type:'place',   to, n}
  *   {type:'attack',  from, to}
  *   {type:'advance', n}          (after a capture)
@@ -19,11 +18,10 @@
   // scatter: chance of a careless reinforcement
   // terrainAware: how much the computer respects mountains, hills, forests
   //   and rivers when sizing up a fight (0 = ignores them)
-  // eagerTrade: cash in cards as soon as it has a set (else only at 5)
   var DIFF = {
-    easy:   { ratio: 1.7,  regionAware: 0.3, scatter: 0.35, stack: false, keepBack: 1.0, maxAttacks: 6,   terrainAware: 0,   eagerTrade: false },
-    normal: { ratio: 1.2,  regionAware: 1.0, scatter: 0.0,  stack: true,  keepBack: 1.0,  maxAttacks: 60, terrainAware: 1,   eagerTrade: true },
-    hard:   { ratio: 1.0,  regionAware: 1.6, scatter: 0.0,  stack: true,  keepBack: 0,   maxAttacks: 120, terrainAware: 1,  eagerTrade: true },
+    easy:   { ratio: 1.7,  regionAware: 0.3, scatter: 0.35, stack: false, keepBack: 1.0, maxAttacks: 6,   terrainAware: 0 },
+    normal: { ratio: 1.2,  regionAware: 1.0, scatter: 0.0,  stack: true,  keepBack: 1.0,  maxAttacks: 60, terrainAware: 1 },
+    hard:   { ratio: 1.0,  regionAware: 1.6, scatter: 0.0,  stack: true,  keepBack: 0,   maxAttacks: 120, terrainAware: 1 },
   };
 
   // How much harder a town is to take than its army count suggests.
@@ -87,9 +85,6 @@
   // ------------------------------------------------------------ reinforce
   function reinforceStep(state) {
     var d = diff(state);
-    if (RV.Game.canTrade(state) && (d.eagerTrade || RV.Game.mustTrade(state))) {
-      return { type: 'trade' };
-    }
     var pool = state.pool;
     if (pool <= 0) return { type: 'phase', phase: 'attack' };
 

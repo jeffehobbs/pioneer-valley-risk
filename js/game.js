@@ -11,9 +11,6 @@
  *    add +1 to the defender's top die, forests are cover (the defender loses
  *    at most one army per roll), and attacking across a river costs the
  *    attacker a die.
- *  - Cards: take at least one town in a turn and draw a card. Trade three of
- *    a kind or three different terrains for 4, 6, 8, 10, 12, 15, 20... armies
- *    (the count is shared by both sides). Holding 5 cards forces a trade.
  *  - Reinforcements can be undone until the first attack of the turn.
  * Victory: own every town.
  */
@@ -23,11 +20,8 @@
   var START_ARMIES = 3;
   // The human always moves first, which is worth a lot in two-player Risk.
   // The computer gets extra starting armies to compensate, scaled by difficulty.
-  var MACHINE_START_BONUS = { easy: 0, normal: 2, hard: 6 };
+  var MACHINE_START_BONUS = { easy: 2, normal: 5, hard: 7 };
   var PHASES = ['reinforce', 'attack', 'fortify'];
-  var TRADE_VALUES = [4, 6, 8, 10, 12, 15];
-  var HAND_LIMIT = 5;
-  var WILDS = 2;
 
   function shuffle(arr) {
     for (var i = arr.length - 1; i > 0; i--) {
@@ -68,21 +62,13 @@
       advance: null,
       log: [],
       over: null,
-      // cards
-      deck: shuffle(RV.TERRITORIES.map(function (t, i) { return { town: i, kind: t.terrain }; })
-        .concat(Array.from({ length: WILDS }, function () { return { town: -1, kind: 'wild' }; }))),
-      discard: [],
-      hands: [[], []],
-      trades: 0,
-      conquered: false,   // took a town this turn (earns a card)
-      committed: false,   // attacked or fortified this turn (no more undo / trades)
+      committed: false,   // attacked or fortified this turn (no more undo)
       undo: [],           // this turn's placements, newest last
       turnNo: 0,
       stats: {
         taken: [0, 0],
         lost: [0, 0],
         rolls: [0, 0],
-        traded: [0, 0],
         biggest: null,
         battle: null,
         history: [],
@@ -104,7 +90,6 @@
     state.phase = 'reinforce';
     state.fortified = false;
     state.advance = null;
-    state.conquered = false;
     state.committed = false;
     state.undo = [];
     state.turnNo++;
@@ -159,7 +144,6 @@
     var t = state.territories[i];
     if (state.phase !== 'reinforce') return false;
     if (t.owner !== state.turn || n <= 0 || state.pool <= 0) return false;
-    if (mustTrade(state)) return false;
     if (n > state.pool) n = state.pool;
     t.armies += n;
     state.pool -= n;
@@ -183,83 +167,6 @@
     return u;
   }
 
-  // ------------------------------------------------------------------ cards
-  function tradeValue(state) {
-    var k = state.trades;
-    return k < TRADE_VALUES.length ? TRADE_VALUES[k]
-      : TRADE_VALUES[TRADE_VALUES.length - 1] + 5 * (k - TRADE_VALUES.length + 1);
-  }
-
-  function isSet(cards) {
-    if (cards.length !== 3) return false;
-    var kinds = cards.map(function (c) { return c.kind; }).filter(function (k) { return k !== 'wild'; });
-    if (kinds.length < 3) return true;               // a wild completes anything
-    if (kinds[0] === kinds[1] && kinds[1] === kinds[2]) return true;
-    return kinds[0] !== kinds[1] && kinds[1] !== kinds[2] && kinds[0] !== kinds[2];
-  }
-
-  // Best set in p's hand as hand indices, or null. Prefers sets that put
-  // the +2 town bonus on a town p owns, and saves wilds for later.
-  function bestSet(state, p) {
-    var hand = state.hands[p], best = null;
-    for (var a = 0; a < hand.length; a++)
-      for (var b = a + 1; b < hand.length; b++)
-        for (var c = b + 1; c < hand.length; c++) {
-          var cards = [hand[a], hand[b], hand[c]];
-          if (!isSet(cards)) continue;
-          var score = 0;
-          cards.forEach(function (cd) {
-            if (cd.kind === 'wild') score -= 3;
-            else if (state.territories[cd.town].owner === p) score += 1;
-          });
-          if (!best || score > best.score) best = { idx: [a, b, c], score: score };
-        }
-    return best ? best.idx : null;
-  }
-
-  function mustTrade(state) {
-    return state.phase === 'reinforce' && state.hands[state.turn].length >= HAND_LIMIT;
-  }
-
-  function canTrade(state) {
-    if (state.over != null || state.advance || state.committed) return false;
-    if (state.phase !== 'reinforce' && state.phase !== 'attack') return false;
-    return !!bestSet(state, state.turn);
-  }
-
-  // Trade the best set: armies go to the pool, and a card showing a town
-  // you hold puts +2 straight onto that town (once per trade).
-  function tradeCards(state) {
-    if (!canTrade(state)) return null;
-    var p = state.turn, hand = state.hands[p];
-    var idx = bestSet(state, p);
-    var cards = idx.map(function (k) { return hand[k]; });
-    idx.slice().sort(function (x, y) { return y - x; }).forEach(function (k) { hand.splice(k, 1); });
-    state.discard = state.discard.concat(cards);
-    var armies = tradeValue(state);
-    state.trades++;
-    state.stats.traded[p]++;
-    var bonusTown = -1;
-    cards.some(function (cd) {
-      if (cd.kind !== 'wild' && state.territories[cd.town].owner === p) { bonusTown = cd.town; return true; }
-      return false;
-    });
-    if (bonusTown >= 0) state.territories[bonusTown].armies += 2;
-    state.pool += armies;
-    state.phase = 'reinforce';
-    return { cards: cards, armies: armies, bonusTown: bonusTown };
-  }
-
-  function drawCard(state, p) {
-    if (!state.deck.length) {
-      state.deck = shuffle(state.discard);
-      state.discard = [];
-    }
-    var card = state.deck.pop();
-    if (card) state.hands[p].push(card);
-    return card || null;
-  }
-
   // Can the current phase advance to `phase`? Only forward, and only once
   // every reinforcement has been placed.
   function canSetPhase(state, phase) {
@@ -267,7 +174,6 @@
     if (next < 0 || next < cur) return false;
     if (state.pool > 0 && next > 0) return false;
     if (state.advance) return false;
-    if (next > 0 && mustTrade(state)) return false;
     return true;
   }
 
@@ -379,7 +285,6 @@
       b.owner = state.turn;
       b.armies = moved;
       a.armies -= moved;
-      state.conquered = true;
       st.taken[p]++;
       st.battle.captured = true;
       if (a.armies > 1) {
@@ -413,7 +318,6 @@
   function endTurn(state) {
     if (state.over != null) return;
     if (state.advance) advance(state, 0);
-    state.drawn = state.conquered ? drawCard(state, state.turn) : null;
     state.pool = 0;
     state.turn = 1 - state.turn;
     if (state.turn === 0) state.round++;
@@ -453,13 +357,6 @@
     combatMods: combatMods,
     canUndo: canUndo,
     undoPlacement: undoPlacement,
-    tradeValue: tradeValue,
-    isSet: isSet,
-    bestSet: bestSet,
-    canTrade: canTrade,
-    mustTrade: mustTrade,
-    tradeCards: tradeCards,
-    HAND_LIMIT: HAND_LIMIT,
     advance: advance,
     endTurn: endTurn,
     winner: winner,

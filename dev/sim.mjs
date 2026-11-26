@@ -53,7 +53,6 @@ function botTurn(st) {
   let front = mine().filter((i) => enemies(i).length)
     .sort((a, b) => st.territories[b].armies - st.territories[a].armies)[0];
   if (front == null) front = mine()[0];
-  while (RV.Game.canTrade(st)) RV.Game.tradeCards(st);
   RV.Game.placeArmies(st, front, st.pool);
   if (!RV.Game.setPhase(st, 'attack')) throw new Error('bot could not enter attack');
 
@@ -84,8 +83,7 @@ function aiTurn(st) {
   for (let steps = 0; steps < 1000; steps++) {
     const a = RV.AI.step(st);
     if (a.type === 'end') return;
-    if (a.type === 'trade') { if (!RV.Game.tradeCards(st)) throw new Error('AI bad trade'); }
-    else if (a.type === 'place') { if (!RV.Game.placeArmies(st, a.to, a.n)) throw new Error('AI bad place'); }
+    if (a.type === 'place') { if (!RV.Game.placeArmies(st, a.to, a.n)) throw new Error('AI bad place'); }
     else if (a.type === 'attack') { if (!RV.Game.attack(st, a.from, a.to)) throw new Error('AI bad attack'); }
     else if (a.type === 'advance') RV.Game.advance(st, a.n);
     else if (a.type === 'move') { if (!RV.Game.moveArmies(st, a.from, a.to, a.n)) throw new Error('AI bad move'); }
@@ -110,12 +108,12 @@ let failures = 0;
 for (const difficulty of ['easy', 'normal', 'hard']) {
   const tally = { 0: 0, 1: 0, draw: 0 };
   const rounds = [];
-  let rolls = 0, trades = 0, finished = 0;
+  let rolls = 0, finished = 0;
   for (let g = 0; g < GAMES; g++) {
     try {
       const st = runGame(difficulty);
       if (st.over == null) tally.draw++; else { tally[st.over]++; rounds.push(st.round); }
-      rolls += st.stats.rolls[0] + st.stats.rolls[1]; trades += st.trades; finished++;
+      rolls += st.stats.rolls[0] + st.stats.rolls[1]; finished++;
     } catch (e) {
       failures++;
       console.log(`${difficulty} game ${g}: ERROR ${e.message}`);
@@ -124,7 +122,7 @@ for (const difficulty of ['easy', 'normal', 'hard']) {
   rounds.sort((a, b) => a - b);
   const median = rounds.length ? rounds[Math.floor(rounds.length / 2)] : '-';
   console.log(`${difficulty.padEnd(6)} bot ${tally[0]}  computer ${tally[1]}  unfinished ${tally.draw}  ` +
-    `(median ${median} rounds, ${(rolls / finished).toFixed(0)} rolls, ${(trades / finished).toFixed(1)} trades / game)`);
+    `(median ${median} rounds, ${(rolls / finished).toFixed(0)} rolls / game)`);
   if (tally.draw > GAMES * 0.2) { failures++; console.log(`  too many unfinished games on ${difficulty}`); }
 }
 console.log(failures ? `simulation: FAILED (${failures})` : 'simulation: OK');

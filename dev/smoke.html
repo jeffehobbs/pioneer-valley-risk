@@ -24,7 +24,7 @@
   var frame = document.getElementById('game');
   var errors = [], notes = [], w, doc;
   var stats = { clicks: 0, attacks: 0, captures: 0, advances: 0, fortifies: 0,
-                aiTurns: 0, trades: 0, undos: 0, skips: 0, taunts: 0 };
+                aiTurns: 0, undos: 0, skips: 0, taunts: 0 };
 
   function done(status) {
     var line = 'SMOKE: ' + status + ' | errors=' + (errors.length ? errors[0].slice(0, 300) : 'none') +
@@ -58,14 +58,6 @@
 
   async function humanTurn() {
     var st = w.RV.UI.state;
-    // cards: trade whenever the button allows it (it must, at 5 cards)
-    while (!doc.getElementById('btn-trade').disabled) {
-      var before = st.hands[0].length;
-      clickBtn('btn-trade');
-      if (st.hands[0].length !== before - 3) throw new Error('trade did not take 3 cards');
-      stats.trades++;
-    }
-    if (st.hands[0].length >= 5) throw new Error('holding 5+ cards with no trade allowed');
     // reinforce: one click at a time on the strongest front town
     var mine = w.RV.Game.territoriesOf(st, 0).filter(function (i) { return enemiesOf(st, i).length; });
     mine.sort(function (a, b) { return st.territories[b].armies - st.territories[a].armies; });

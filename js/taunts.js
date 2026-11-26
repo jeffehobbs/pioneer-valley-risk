@@ -72,11 +72,6 @@
       'You broke my county. I will remember that.',
       'My beautiful county. You will pay for that.',
     ],
-    trade: [
-      'Cashing in. Thank you, valley.',
-      'Three of a kind. Reinforcements inbound.',
-      'Cards in, armies out.',
-    ],
     win:  'The Pioneer Valley is mine. Drive safe on 91.',
     lose_game: 'Impossible. I demand a recount.',
   };

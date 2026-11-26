@@ -462,26 +462,6 @@
     refreshHUD();
   }
 
-  function doTrade() {
-    var st = ui.state;
-    if (busy() || !RV.Game.canTrade(st)) return;
-    var t = RV.Game.tradeCards(st);
-    if (!t) return;
-    sel = -1;
-    RV.Audio.play('trade');
-    RV.addLog(st, 'You trade in three cards for +' + t.armies + ' armies' +
-      (t.bonusTown >= 0 ? ' (+2 on ' + st.territories[t.bonusTown].name + ')' : '') + '.');
-    if (t.bonusTown >= 0) {
-      addFloat(RV.centroid[t.bonusTown][0] * CELL, RV.centroid[t.bonusTown][1] * CELL - 8, '+2', '#7dff8a');
-    }
-    refreshHUD();
-  }
-
-  function cardName(c) {
-    if (c.kind === 'wild') return 'Wild card';
-    return RV.TERRITORIES[c.town].name + ' — ' + c.kind.charAt(0).toUpperCase() + c.kind.slice(1);
-  }
-
   function onClick(e) {
     if (busy()) return;
     var t = cellAt(e);
@@ -490,11 +470,7 @@
     var terr = st.territories[t];
 
     if (st.phase === 'reinforce') {
-      if (RV.Game.mustTrade(st)) {
-        RV.addLog(st, 'You hold ' + st.hands[0].length + ' cards: trade in a set first.');
-        RV.Audio.play('lose');
-        nudge('btn-trade');
-      } else if (terr.owner === 0 && st.pool > 0) {
+      if (terr.owner === 0 && st.pool > 0) {
         var n = e.shiftKey ? st.pool : 1;
         RV.Game.placeArmies(st, t, n);
         RV.Audio.play('move');
@@ -605,7 +581,6 @@
     paintSpd();
     spd.addEventListener('click', function () { RV.AITurn.cycleSpeed(); RV.Audio.play('click'); paintSpd(); });
     document.getElementById('btn-undo').addEventListener('click', doUndo);
-    document.getElementById('btn-trade').addEventListener('click', doTrade);
     document.getElementById('btn-quit').addEventListener('click', function () {
       if (!ui.state || ui.state.over != null) { RV.Main.showMenu(); return; }
       openModal({
@@ -615,15 +590,6 @@
         onOk: function () { RV.Main.showMenu(); },
       });
     });
-  }
-
-  // Briefly flash a control to point at it.
-  function nudge(id) {
-    var el = document.getElementById(id);
-    if (!el) return;
-    el.classList.remove('nudge');
-    void el.offsetWidth;
-    el.classList.add('nudge');
   }
 
   // The computer speaks: a bubble under its name, and a line in the log.
@@ -643,10 +609,6 @@
   function onHumanTurn() {
     var st = ui.state;
     if (!st || st.turn !== 0) return;
-    if (RV.Game.mustTrade(st)) {
-      RV.addLog(st, 'You hold ' + st.hands[0].length + ' cards: trade in a set first.');
-      nudge('btn-trade');
-    }
     refreshHUD();
   }
 
@@ -655,10 +617,6 @@
     sel = -1;
     RV.addLog(st, 'You end your turn.');
     RV.Game.endTurn(st);
-    if (st.drawn) {
-      RV.addLog(st, 'You took a town, so you draw a card: ' + cardName(st.drawn) + '.');
-      RV.Audio.play('card');
-    }
     RV.Audio.play('turn');
     dirty = true;
     refreshHUD();
@@ -799,9 +757,7 @@
       document.getElementById('sw-' + side).style.background = p.color;
       document.getElementById('hud-' + side + '-name').textContent = p.name;
       document.getElementById('hud-' + side + '-stats').textContent =
-        RV.Game.territoriesOf(st, i).length + ' TOWNS · ' + RV.Game.totalArmies(st, i) + ' ARMIES' +
-        // your own cards are on the side panel; the computer's count is worth watching
-        (i === 1 ? ' · ' + st.hands[1].length + (st.hands[1].length === 1 ? ' CARD' : ' CARDS') : '');
+        RV.Game.territoriesOf(st, i).length + ' TOWNS · ' + RV.Game.totalArmies(st, i) + ' ARMIES';
     }
     var myTurn = st.turn === 0;
     var skipping = !myTurn && RV.AITurn.skipping();
@@ -825,7 +781,6 @@
     });
     document.getElementById('btn-end').disabled = !myTurn || st.over != null || st.pool > 0;
     document.getElementById('btn-undo').disabled = !myTurn || !RV.Game.canUndo(st);
-    refreshCards(st, myTurn);
 
     // info card
     var t = sel >= 0 ? sel : (hover >= 0 ? hover : -1);
@@ -888,47 +843,6 @@
     RV.Main.autosave(st);
   }
 
-  // Your hand, the set TRADE would use, and what it's worth.
-  var handKey = '';
-  function refreshCards(st, myTurn) {
-    var hand = st.hands[0];
-    var set = RV.Game.bestSet(st, 0) || [];
-    var key = JSON.stringify(hand) + '|' + set.join(',');
-    if (key !== handKey) {
-      handKey = key;
-      var el = document.getElementById('hand');
-      el.innerHTML = '';
-      if (!hand.length) {
-        el.innerHTML = '<div class="hand-empty">—</div>';
-      }
-      hand.forEach(function (c, i) {
-        var d = document.createElement('div');
-        d.className = 'rcard ' + c.kind + (set.indexOf(i) >= 0 ? ' inset' : '') +
-          (c.town >= 0 && st.territories[c.town].owner === 0 ? ' owned' : '');
-        d.title = cardName(c) + (c.town >= 0 && st.territories[c.town].owner === 0
-          ? ' (you hold it: +2 there when traded)' : '');
-        var art = c.kind === 'wild'
-          ? RV.paintSprite(RV.SPR.star, 2)
-          : RV.paintSprite(RV.SPR[RV.TERRAIN_TILES[c.kind]][0], 2);
-        art.className = 'rcard-art';
-        d.appendChild(art);
-        var nm = document.createElement('div');
-        nm.className = 'rcard-name';
-        nm.textContent = c.kind === 'wild' ? 'WILD' : (RV.TERRITORIES[c.town].label || RV.TERRITORIES[c.town].name).toUpperCase();
-        d.appendChild(nm);
-        var kd = document.createElement('div');
-        kd.className = 'rcard-kind';
-        kd.textContent = c.kind === 'wild' ? 'ANY' : c.kind.toUpperCase();
-        d.appendChild(kd);
-        el.appendChild(d);
-      });
-    }
-    var tb = document.getElementById('btn-trade');
-    tb.textContent = 'TRADE +' + RV.Game.tradeValue(st);
-    tb.disabled = !myTurn || !RV.Game.canTrade(st);
-    tb.classList.toggle('urgent', myTurn && RV.Game.mustTrade(st));
-  }
-
   // ------------------------------------------------------------ game over
   // Results: what happened, the round the tide turned, and your record.
   function showGameOver(winner) {
@@ -956,7 +870,6 @@
     var rows = [
       ['TOWNS TAKEN', pair(S.taken[0], S.taken[1])],
       ['ARMIES LOST', pair(S.lost[0], S.lost[1])],
-      ['CARD TRADES', pair(S.traded[0], S.traded[1])],
       ['BIGGEST BATTLE', big],
       ['TIDE TURNED', tide == null ? 'NEVER IN DOUBT' : 'ROUND ' + tide],
       [st.difficulty.toUpperCase() + ' RECORD', rec.w + 'W – ' + rec.l + 'L'],
@@ -1046,7 +959,6 @@
       flashes.length = 0;
       arrow = null;
       shake = 0;
-      handKey = '';
       if (canvas) canvas.style.transform = '';
       var tb = document.getElementById('taunt');
       if (tb) tb.classList.remove('show');

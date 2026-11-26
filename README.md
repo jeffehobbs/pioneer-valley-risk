@@ -21,11 +21,6 @@ Then browse to http://localhost:8000.
   completely (Franklin +4, Hampshire +5, Hampden +5). Click your towns to place them;
   shift-click places the whole pool. Once the pool is empty, the game moves to Attack. UNDO
   (Cmd/Ctrl-Z) takes back placements until your first attack.
-- **Cards:** take at least one town in a turn and you draw a card showing a town and its terrain
-  (plus two wilds in the deck). Trade three of a kind, or three different terrains, for 4, 6, 8,
-  10, 12, 15, then 20, 25 and so on. The count is shared by both sides, so every trade is worth
-  more than the last. A traded card showing a town you hold also puts +2 there. At 5 cards you
-  must trade before placing.
 - **Attack:** click one of your towns with 2+ armies, then an outlined neighbor. The attacker rolls
   up to 3 dice and the defender up to 2. The highest dice are compared pairwise, and ties go to the
   defender. After a capture, you choose how many more armies to advance.
@@ -44,7 +39,7 @@ Then browse to http://localhost:8000.
 - Own every town to win.
 
 Difficulty sets how aggressive the computer is and how many extra starting armies it gets to offset
-moving second: Easy +0, Normal +2, Hard +6. AI 1X / 2X / 4X sets how fast it plays. At 2X and up,
+moving second: Easy +2, Normal +5, Hard +7. AI 1X / 2X / 4X sets how fast it plays. At 2X and up,
 its rolls against one town are shown as a single battle. Click the board or press Space during its
 turn to skip ahead. A results screen after each game shows the swing of the war and your record
 on that difficulty.
@@ -73,12 +68,12 @@ dev/smoke.sh
 
 This runs the map check (contiguity, connectivity, label anchors), the sprite palette check, and a
 headless simulation of 60 games through the real rules and AI. It then opens the actual page in
-headless Chrome and plays 6 rounds with real click events: trades, undo, every AI speed, and
+headless Chrome and plays 6 rounds with real click events: undo, every AI speed, and
 skip. Two more runs quit in the middle of the computer's turn, and reload and CONTINUE in the middle
 of it. Use `dev/smoke.sh 80 hard` to play a whole game. `dev/sprites.html` is a gallery of every
 sprite.
 
 Balance: `node dev/sim.mjs 400` plays the computer against a terrain-aware stand-in human. Set
 `BONUS=easy,normal,hard` to try other start bonuses, and `BOT_RATIO` to make the stand-in bolder or
-more careful. With cards and terrain in, the computer wins about 10% / 50% / 70% on Easy / Normal /
+more careful. With terrain in, the computer wins about 10% / 50% / 70% on Easy / Normal /
 Hard.

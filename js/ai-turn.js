@@ -27,7 +27,6 @@
     skipping = false;
     var myGen = gen;
     var pending = null;   // an action already chosen while batching rolls
-    var spoke = false;    // one card-trade quip per turn is plenty
     RV.AI.resetTurn(st);
     RV.UI.setBusy(true);
     RV.UI.refresh();
@@ -46,19 +45,6 @@
       pending = null;
 
       switch (action.type) {
-        case 'trade': {
-          var t = RV.Game.tradeCards(st);
-          if (!t) { next(0); return; }
-          RV.addLog(st, 'The computer trades in three cards for +' + t.armies + ' armies' +
-            (t.bonusTown >= 0 ? ' (+2 on ' + st.territories[t.bonusTown].name + ')' : '') + '.');
-          if (t.bonusTown >= 0) floatAt(t.bonusTown, '+2', '#7dff8a');
-          if (!skipping) RV.Audio.play('trade');
-          if (!spoke && t.armies >= 8) { spoke = true; RV.UI.say(RV.Taunts.pick('trade')); }
-          RV.UI.refresh();
-          next(450);
-          return;
-        }
-
         case 'place':
           RV.Game.placeArmies(st, action.to, action.n);
           floatAt(action.to, '+' + action.n, '#7dff8a');
@@ -150,8 +136,7 @@
       if (!alive()) return;
       running = false;
       skipping = false;
-      var conquered = st.conquered;
-      RV.addLog(st, 'The computer ends its turn' + (conquered ? ' and draws a card.' : '.'));
+      RV.addLog(st, 'The computer ends its turn.');
       RV.Game.endTurn(st);
       RV.UI.setBusy(false);
       RV.Audio.play('turn');

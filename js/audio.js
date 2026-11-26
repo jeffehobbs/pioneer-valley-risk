@@ -138,10 +138,6 @@
     },
     // a town falls: low boom under the fanfare
     boom:    function () { noise(0.5, { vol: 0.22, cutoff: 400 }); tone(90, 0.45, { vol: 0.14, slideTo: 35, type: 'triangle' }); },
-    card:    function () { tone(1047, 0.06, { vol: 0.05, type: 'triangle' }); tone(1319, 0.1, { vol: 0.05, type: 'triangle', delay: 0.07 }); },
-    trade:   function () {
-      [659, 784, 988, 1319].forEach(function (f, i) { tone(f, 0.07, { vol: 0.06, delay: i * 0.05, type: 'square' }); });
-    },
     taunt:   function () { tone(220, 0.07, { vol: 0.05 }); tone(196, 0.07, { vol: 0.05, delay: 0.08 }); tone(165, 0.12, { vol: 0.05, delay: 0.16 }); },
     undo:    function () { tone(660, 0.05, { vol: 0.05 }); tone(440, 0.06, { vol: 0.05, delay: 0.05 }); },
   };

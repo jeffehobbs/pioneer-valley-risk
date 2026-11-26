@@ -25,10 +25,6 @@
 <div id="app">
   <header id="topbar">
     <button id="btn-quit" class="btn small quit" title="Quit to the title screen">QUIT</button>
-    <div class="logo">
-      <canvas id="logo-canvas" width="16" height="16"></canvas>
-      <span><b>PIONEER&nbsp;VALLEY</b> RISK</span>
-    </div>
     <div class="hud">
       <div id="hud-player" class="hud-side">
         <span class="swatch" id="sw-player"></span>
@@ -70,12 +66,6 @@
           <button id="btn-undo" class="btn small" title="Take back your last placement (Cmd/Ctrl-Z). Works until your first attack.">UNDO</button>
         </div>
         <button id="btn-end" class="btn end" title="End your turn">END TURN &#9654;</button>
-      </section>
-      <section id="cards-card" class="card"
-        title="Take a town on your turn to draw a card. Trade three of a kind or three different terrains for armies; each trade is worth more. A card showing a town you hold puts +2 there. At 5 cards you must trade.">
-        <h3>CARDS</h3>
-        <div id="hand"></div>
-        <button id="btn-trade" class="btn trade">TRADE +4</button>
       </section>
       <section id="info-card" class="card idle">
         <h3 id="info-name">—</h3>
