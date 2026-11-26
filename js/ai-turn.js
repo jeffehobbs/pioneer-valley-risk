@@ -1,23 +1,17 @@
 /* Pioneer Valley Risk — runs the computer's turn, step by step.
  *
- * Speed (1X / 2X / 4X, remembered): at 1X every roll gets its own dice; at
- * 2X and 4X the rolls against one town are resolved together and shown as
- * one battle. skip() (a click or Space during its turn) finishes the turn
- * with no animation at all.
+ * Every roll gets its own dice. skip() (a click or Space during its turn)
+ * finishes the turn with no animation at all.
  */
 (function () {
   'use strict';
 
-  var SPEEDS = [1, 2, 4];
   var running = false;
   var skipping = false;
   var gen = 0;          // bumped on reset so a stale loop from an old game dies
   var MAX_STEPS = 600;
-  var speed = 1;
-  try { speed = Number(localStorage.getItem('pvrisk.speed')) || 1; } catch (e) { /* private mode */ }
-  if (SPEEDS.indexOf(speed) < 0) speed = 1;
 
-  function wait(ms) { return skipping ? 0 : ms / speed; }
+  function wait(ms) { return skipping ? 0 : ms; }
 
   function run() {
     var st = RV.UI.state;
@@ -26,7 +20,6 @@
     running = true;
     skipping = false;
     var myGen = gen;
-    var pending = null;   // an action already chosen while batching rolls
     RV.AI.resetTurn(st);
     RV.UI.setBusy(true);
     RV.UI.refresh();
@@ -41,8 +34,7 @@
       steps++;
       if (st.over != null) { RV.UI.setBusy(false); RV.UI.showGameOver(st.over); running = false; return; }
       if (steps > MAX_STEPS) { finish(); return; }
-      var action = pending || RV.AI.step(st);
-      pending = null;
+      var action = RV.AI.step(st);
 
       switch (action.type) {
         case 'place':
@@ -56,13 +48,7 @@
           return;
 
         case 'attack':
-          if (speed === 1 && !skipping) {
-            RV.Combat.doAttack(st, action.from, action.to, function () { next(180); }, { fast: true });
-            return;
-          }
-          var b = battle(action.from, action.to);
-          if (!b) { next(0); return; }
-          RV.Combat.showBattle(st, b, function () { next(180); }, { fast: true, speed: speed });
+          RV.Combat.doAttack(st, action.from, action.to, function () { next(180); }, { fast: true });
           return;
 
         case 'advance': {
@@ -106,28 +92,6 @@
       }
     }
 
-    // Roll against one town for as long as the computer keeps choosing it.
-    // The AI is asked after every roll, exactly as at 1X, so speed never
-    // changes what it decides.
-    function battle(from, to) {
-      var out = { info: RV.Combat.names(st, from, to), rolls: 0, atkLoss: 0, defLoss: 0,
-                  captured: false, last: null };
-      for (;;) {
-        var r = RV.Game.attack(st, from, to);
-        if (!r) break;
-        out.rolls++;
-        out.atkLoss += r.atkLoss;
-        out.defLoss += r.defLoss;
-        out.last = r;
-        if (r.captured || st.over != null) { out.captured = r.captured; break; }
-        var nx = RV.AI.step(st);
-        if (nx.type === 'attack' && nx.from === from && nx.to === to) continue;
-        pending = nx;
-        break;
-      }
-      return out.rolls ? out : null;
-    }
-
     function floatAt(i, text, color) {
       RV.UI.addFloat(RV.centroid[i][0] * 16, RV.centroid[i][1] * 16 - 8, text, color);
     }
@@ -152,11 +116,5 @@
     running: function () { return running; },
     skipping: function () { return skipping; },
     skip: function () { if (running) skipping = true; },
-    speed: function () { return speed; },
-    cycleSpeed: function () {
-      speed = SPEEDS[(SPEEDS.indexOf(speed) + 1) % SPEEDS.length];
-      try { localStorage.setItem('pvrisk.speed', String(speed)); } catch (e) { /* ignore */ }
-      return speed;
-    },
   };
 })();

@@ -576,10 +576,6 @@
     }
     paintMus();
     mus.addEventListener('click', function () { RV.Audio.toggleMusic(); paintMus(); });
-    var spd = document.getElementById('btn-speed');
-    function paintSpd() { spd.textContent = 'AI ' + RV.AITurn.speed() + 'X'; }
-    paintSpd();
-    spd.addEventListener('click', function () { RV.AITurn.cycleSpeed(); RV.Audio.play('click'); paintSpd(); });
     document.getElementById('btn-undo').addEventListener('click', doUndo);
     document.getElementById('btn-quit').addEventListener('click', function () {
       if (!ui.state || ui.state.over != null) { RV.Main.showMenu(); return; }

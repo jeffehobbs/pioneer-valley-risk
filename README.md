@@ -41,10 +41,9 @@ A HOW TO PLAY popup opens on your first game; the **?** button next to QUIT brin
 - Own every town to win.
 
 Difficulty sets how aggressive the computer is and how many extra starting armies it gets to offset
-moving second: Easy +2, Normal +5, Hard +7. AI 1X / 2X / 4X sets how fast it plays. At 2X and up,
-its rolls against one town are shown as a single battle. Click the board or press Space during its
-turn to skip ahead. A results screen after each game shows the swing of the war and your record
-on that difficulty.
+moving second: Easy +2, Normal +5, Hard +7. Click the board or press Space during its turn to skip
+ahead. A results screen after each game shows the swing of the war and your record on that
+difficulty.
 
 ## Layout
 
@@ -55,7 +54,7 @@ on that difficulty.
 | `js/game.js` | Rules and state: phases, dice, advance, fortify, win |
 | `js/ai.js` | The computer's decision for each step |
 | `js/taunts.js` | What the computer says when towns and counties change hands |
-| `js/ai-turn.js` | Runs the computer's turn with animation, speed and skip |
+| `js/ai-turn.js` | Runs the computer's turn with animation and skip |
 | `js/ui.js` | Canvas rendering, input, HUD, and modals |
 | `js/combat.js` | Dice overlay and resolution |
 | `js/sprites.js` | Pixel art; every palette key is one character |
@@ -70,9 +69,8 @@ dev/smoke.sh
 
 This runs the map check (contiguity, connectivity, label anchors), the sprite palette check, and a
 headless simulation of 60 games through the real rules and AI. It then opens the actual page in
-headless Chrome and plays 6 rounds with real click events: undo, every AI speed, and
-skip. Two more runs quit in the middle of the computer's turn, and reload and CONTINUE in the middle
-of it. Use `dev/smoke.sh 80 hard` to play a whole game. `dev/sprites.html` is a gallery of every
+headless Chrome and plays 6 rounds with real click events, including undo and skip. Two more runs
+quit in the middle of the computer's turn, and reload and CONTINUE in the middle of it. Use `dev/smoke.sh 80 hard` to play a whole game. `dev/sprites.html` is a gallery of every
 sprite.
 
 Balance: `node dev/sim.mjs 400` plays the computer against a terrain-aware stand-in human. Set

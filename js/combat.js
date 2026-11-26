@@ -1,10 +1,8 @@
 /* Pioneer Valley Risk — combat: dice animation + resolution.
  *
- * Two ways in, one way out:
- *  - doAttack(st, from, to, onDone, opts)  one roll (you, or the computer at 1X)
- *  - showBattle(st, battle, onDone, opts)  the computer's rolls, already resolved
- * Both end in show(), which animates the dice, shows the ground's effect and
- * any battle summary, then logs, taunts, flashes and calls onDone.
+ * doAttack(st, from, to, onDone, opts) rolls once, then show() animates the
+ * dice and shows the ground's effect, then logs, taunts, flashes and calls
+ * onDone.
  */
 (function () {
   'use strict';
@@ -31,7 +29,6 @@
           '</div>' +
         '</div>' +
         '<div class="dice-tags"></div>' +
-        '<div class="dice-summary"></div>' +
       '</div>';
     document.body.appendChild(overlay);
   }
@@ -76,17 +73,6 @@
     show(st, info, onDone, opts || {});
   }
 
-  // The computer's batch of rolls on one target (resolved by ai-turn).
-  function showBattle(st, battle, onDone, opts) {
-    var info = battle.info;
-    info.last = battle.last;
-    info.summary = battle.rolls > 1 ? battle : null;
-    info.atkLoss = battle.atkLoss;
-    info.defLoss = battle.defLoss;
-    info.captured = battle.captured;
-    show(st, info, onDone, opts || {});
-  }
-
   // Names and dice colors, captured before the roll changes ownership.
   function names(st, from, to) {
     var a = st.territories[from], b = st.territories[to];
@@ -105,10 +91,8 @@
     RV.UI.setBusy(true);
     RV.UI.setArrow(info.from, info.to, st.players[info.by].color);
 
-    var speed = opts.speed || 1;
-    var ROLL = (opts.fast ? 380 : 700) / speed;
-    var HOLD = (opts.fast ? 420 : 650) / speed;
-    if (info.summary) HOLD += 500 / speed;
+    var ROLL = opts.fast ? 380 : 700;
+    var HOLD = opts.fast ? 420 : 650;
     if (isSkipping(st)) { finish(); return; }
 
     ensureOverlay();
@@ -117,9 +101,6 @@
     overlay.querySelector('.dice-tags').innerHTML = modTags(result.mods).map(function (t) {
       return '<span class="tag ' + t[0] + '">' + t[1] + '</span>';
     }).join('');
-    var sumEl = overlay.querySelector('.dice-summary');
-    sumEl.innerHTML = '';
-    sumEl.className = 'dice-summary';
 
     var atkRow = overlay.querySelector('.atk-row');
     var defRow = overlay.querySelector('.def-row');
@@ -142,7 +123,6 @@
       setDice(atkRow, result.atk, info.atkKind, scale);
       setDice(defRow, result.def, info.defKind, scale);
       markDice(atkRow, defRow, result);
-      if (info.summary) showSummary(sumEl, info);
       setTimeout(function () {
         overlay.classList.remove('show');
         finish();
@@ -204,18 +184,9 @@
   }
 
   function logLine(info, last) {
-    var you = info.by === 0;
-    var s = info.summary;
-    var msg;
-    if (s) {
-      msg = 'The computer hits ' + info.toName + ' from ' + info.fromName +
-        ': ' + s.rolls + ' rolls, it loses ' + info.atkLoss + ', you lose ' + info.defLoss;
-    } else {
-      msg = (you ? 'You attack ' : 'The computer attacks ') + info.toName + ' from ' + info.fromName +
-        ': ' + last.atk.join(',') + ' vs ' + last.def.join(',');
-    }
+    var msg = (info.by === 0 ? 'You attack ' : 'The computer attacks ') + info.toName +
+      ' from ' + info.fromName + ': ' + last.atk.join(',') + ' vs ' + last.def.join(',');
     if (info.captured) return msg + ' — ' + info.toName + ' captured!';
-    if (s) return msg + '.';
     return msg + ' — defender loses ' + info.defLoss + ', attacker loses ' + info.atkLoss + '.';
   }
 
@@ -259,15 +230,6 @@
     }
   }
 
-  function showSummary(el, info) {
-    var s = info.summary;
-    el.className = 'dice-summary show' + (info.captured ? ' won' : '');
-    el.innerHTML =
-      '<b>BATTLE &times;' + s.rolls + '</b> ' +
-      '<span class="atk">-' + info.atkLoss + '</span> / ' +
-      '<span class="def">-' + info.defLoss + '</span>' +
-      (info.captured ? ' <b class="cap">CAPTURED</b>' : '');
-  }
 
-  RV.Combat = { doAttack: doAttack, showBattle: showBattle, names: names };
+  RV.Combat = { doAttack: doAttack };
 })();

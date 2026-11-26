@@ -196,8 +196,7 @@
       while (st.over == null && st.round <= MAX_ROUNDS) {
         await humanTurn();
         if (st.over != null) break;
-        // every turn at a different computer speed; every third one skipped
-        clickBtn('btn-speed');
+        // every third computer turn skipped
         if (stats.aiTurns % 3 === 2) {
           await wait(700);
           doc.getElementById('board').dispatchEvent(new w.MouseEvent('click', { bubbles: true, clientX: 5, clientY: 5 }));

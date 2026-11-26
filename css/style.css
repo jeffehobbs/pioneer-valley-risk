@@ -97,8 +97,8 @@ canvas { image-rendering: pixelated; image-rendering: crisp-edges; }
   margin-top: 4px;
 }
 
-/* speed, music and sound sit atop the side panel; equal widths so the
-   labels changing (AI 1X / 4X, MUSIC OFF) don't shift the row */
+/* music and sound sit atop the side panel; equal widths so the labels
+   changing (MUSIC OFF) don't shift the row */
 .side-actions { display: flex; gap: 8px; flex-shrink: 0; padding-bottom: 4px; }
 .side-actions .btn { flex: 1; padding-left: 4px; padding-right: 4px; }
 
@@ -548,7 +548,7 @@ canvas { image-rendering: pixelated; image-rendering: crisp-edges; }
 .dice-card { flex-direction: column; gap: 12px; }
 .dice-main { display: flex; align-items: center; gap: 22px; }
 .dice-tags { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
-.dice-tags:empty, .dice-summary:empty { display: none; }
+.dice-tags:empty { display: none; }
 .tag {
   font-size: 7px;
   padding: 4px 6px;
@@ -559,9 +559,6 @@ canvas { image-rendering: pixelated; image-rendering: crisp-edges; }
 .tag.mountain { color: #d4d4de; }
 .tag.hills { color: #e6a95a; }
 .tag.forest { color: #6fd27c; }
-.dice-summary { font-size: 10px; color: var(--text); }
-.dice-summary .atk, .dice-summary .def { color: #ff8a80; }
-.dice-summary .cap { color: var(--gold); }
 .die.covered { outline: 3px solid #6fd27c; outline-offset: 1px; }
 .die.spare { opacity: 0.3; }
 .die-badge {
@@ -653,7 +650,6 @@ canvas { image-rendering: pixelated; image-rendering: crisp-edges; }
   .dice-side { gap: 6px; }
   .dice-label { max-width: calc(var(--die) * 3 + 8px); font-size: 6px; }
   .dice-vs { font-size: 12px; text-shadow: 2px 2px 0 var(--line); }
-  .dice-summary { font-size: 8px; }
   .tag { font-size: 6px; }
   .die-badge { top: -6px; right: -6px; font-size: 6px; padding: 1px 2px; }
 }
