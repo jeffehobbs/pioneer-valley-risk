@@ -401,6 +401,10 @@ canvas { image-rendering: pixelated; image-rendering: crisp-edges; }
 }
 .dice-overlay.show { opacity: 1; }
 
+/* Dice draw at 64px; on narrow screens they shrink so two rows of three
+   (a mountain gives the defender a third) still fit: 6 dice + ~124px of
+   padding, gaps and VS must fit inside the 16px gutters. */
+.dice-overlay { --die: clamp(24px, calc((100vw - 124px) / 6), 64px); }
 .dice-card {
   background: var(--panel);
   border: 4px solid var(--line);
@@ -409,17 +413,19 @@ canvas { image-rendering: pixelated; image-rendering: crisp-edges; }
   display: flex;
   align-items: center;
   gap: 22px;
+  max-width: calc(100vw - 32px);
 }
 
 .dice-side { display: flex; flex-direction: column; gap: 10px; align-items: center; }
 .dice-label {
   font-size: 7px;
   color: var(--dim);
-  max-width: 160px;
+  max-width: max(160px, calc(var(--die) * 3 + 16px));
   text-align: center;
+  overflow-wrap: anywhere;
 }
 .dice-row { display: flex; gap: 8px; }
-.dice-row canvas { display: block; }
+.dice-row canvas { display: block; width: var(--die); height: var(--die); }
 .dice-vs {
   font-size: 20px;
   color: var(--gold);
@@ -634,4 +640,20 @@ canvas { image-rendering: pixelated; image-rendering: crisp-edges; }
 @media (max-width: 900px) {
   .taunt { position: fixed; top: 12px; left: 16px; right: 16px; width: auto; max-width: none; }
   .taunt::before { display: none; }
+}
+
+/* popups on phones: never wider than the screen; dice popup gets tighter
+   padding and gaps and a smaller VS */
+@media (max-width: 600px) {
+  .modal-card, .gameover-card { max-width: calc(100vw - 32px); padding: 18px 14px; }
+  .go-chart { width: 100%; max-width: 320px; }
+  .dice-card { padding: 14px 12px; gap: 10px; }
+  .dice-main { gap: 10px; }
+  .dice-row { gap: 4px; }
+  .dice-side { gap: 6px; }
+  .dice-label { max-width: calc(var(--die) * 3 + 8px); font-size: 6px; }
+  .dice-vs { font-size: 12px; text-shadow: 2px 2px 0 var(--line); }
+  .dice-summary { font-size: 8px; }
+  .tag { font-size: 6px; }
+  .die-badge { top: -6px; right: -6px; font-size: 6px; padding: 1px 2px; }
 }
