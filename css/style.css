@@ -108,7 +108,10 @@ canvas { image-rendering: pixelated; image-rendering: crisp-edges; }
   margin-top: 4px;
 }
 
-.top-actions { display: flex; gap: 8px; }
+/* speed, music and sound sit atop the side panel; equal widths so the
+   labels changing (AI 1X / 4X, MUSIC OFF) don't shift the row */
+.side-actions { display: flex; gap: 8px; flex-shrink: 0; padding-bottom: 4px; }
+.side-actions .btn { flex: 1; padding-left: 4px; padding-right: 4px; }
 
 /* --------------------------------------------------------------- board -- */
 #board-wrap {
@@ -681,5 +684,4 @@ canvas { image-rendering: pixelated; image-rendering: crisp-edges; }
 @media (max-width: 900px) {
   .taunt { position: fixed; top: 12px; left: 16px; right: 16px; width: auto; max-width: none; }
   .taunt::before { display: none; }
-  .top-actions { flex-wrap: wrap; }
 }

@@ -46,16 +46,16 @@
         <div id="taunt" class="taunt" aria-live="polite"></div>
       </div>
     </div>
-    <div class="top-actions">
-      <button id="btn-speed" class="btn small" title="How fast the computer plays. Click the board during its turn to skip ahead.">AI 1X</button>
-      <button id="btn-music" class="btn small" title="Music on/off">MUSIC</button>
-      <button id="btn-sound" class="btn small" title="Sound effects on/off">SND</button>
-    </div>
   </header>
 
   <main id="board-wrap">
     <canvas id="board"></canvas>
     <div id="side">
+      <div class="side-actions">
+        <button id="btn-speed" class="btn small" title="How fast the computer plays. Click the board during its turn to skip ahead.">AI 1X</button>
+        <button id="btn-music" class="btn small" title="Music on/off">MUSIC</button>
+        <button id="btn-sound" class="btn small" title="Sound effects on/off">SND</button>
+      </div>
       <section class="card">
         <div class="phase-row">
           <button id="btn-reinforce" class="btn phase active" data-phase="reinforce"
