@@ -564,7 +564,7 @@
     });
     var snd = document.getElementById('btn-sound');
     function paintSnd() {
-      snd.textContent = RV.Audio.isOn() ? 'SND' : 'SND OFF';
+      snd.textContent = RV.Audio.isOn() ? 'SFX' : 'SFX OFF';
       snd.classList.toggle('off', !RV.Audio.isOn());
     }
     paintSnd();
