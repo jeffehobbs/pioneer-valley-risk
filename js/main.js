@@ -1,4 +1,9 @@
-/* Risk: Pioneer Valley — title screen and boot. */
+/* Risk: Pioneer Valley — title screen, boot, saved game and record.
+ *
+ * The game in progress is saved to localStorage after every change, so a
+ * reload (or QUIT) can CONTINUE it. Finished games are tallied per
+ * difficulty.
+ */
 (function () {
   'use strict';
 
@@ -12,8 +17,56 @@
   };
 
   var pressedStart = false;
+  var SAVE_KEY = 'pvrisk.save.v1';
+  var RECORD_KEY = 'pvrisk.record';
+
+  function store(key, val) {
+    try {
+      if (val == null) localStorage.removeItem(key);
+      else localStorage.setItem(key, JSON.stringify(val));
+    } catch (e) { /* private mode or full */ }
+  }
+  function load(key) {
+    try { return JSON.parse(localStorage.getItem(key)); } catch (e) { return null; }
+  }
+
+  function readSave() {
+    var st = load(SAVE_KEY);
+    if (!st || !st.territories || st.territories.length !== RV.TERRITORIES.length || st.over != null) return null;
+    return st;
+  }
+
+  function autosave(st) {
+    if (!st || st !== RV.UI.state) return;
+    store(SAVE_KEY, st.over != null ? null : st);
+  }
+
+  function record() {
+    var r = load(RECORD_KEY) || {};
+    ['easy', 'normal', 'hard'].forEach(function (d) { r[d] = r[d] || { w: 0, l: 0 }; });
+    return r;
+  }
+
+  // Tally a finished game once; returns that difficulty's record.
+  function recordResult(d, won) {
+    var st = RV.UI.state, r = record();
+    if (st && !st.recorded) {
+      st.recorded = true;
+      r[d] = r[d] || { w: 0, l: 0 };
+      r[d][won ? 'w' : 'l']++;
+      store(RECORD_KEY, r);
+    }
+    store(SAVE_KEY, null);
+    return r[d] || { w: 0, l: 0 };
+  }
+
+  function diffTip(d) {
+    var r = record()[d];
+    return DIFF_TIPS[d] + (r.w || r.l ? ' Your record: ' + r.w + 'W – ' + r.l + 'L.' : '');
+  }
 
   function buildMenu() {
+    var saved = readSave();
     var menu = document.createElement('div');
     menu.id = 'menu';
     menu.className = 'menu splash' + (pressedStart ? ' picking' : '');
@@ -25,11 +78,13 @@
         '<div class="diff-row">' +
           ['easy', 'normal', 'hard'].map(function (d) {
             return '<button class="btn diff' + (d === diff ? ' active' : '') +
-              '" data-diff="' + d + '" title="' + DIFF_TIPS[d] + '">' + d.toUpperCase() + '</button>';
+              '" data-diff="' + d + '" title="' + diffTip(d) + '">' + d.toUpperCase() + '</button>';
           }).join('') +
         '</div>' +
+        (saved ? '<button id="menu-continue" class="btn continue" title="Round ' + saved.round + ', ' +
+          saved.difficulty.toUpperCase() + '">CONTINUE &#9654;</button>' : '') +
         '<button id="menu-start" class="btn start" title="' + RV.TERRITORIES.length +
-          ' towns, 3 counties. Take them all.">INSERT COIN &#9654;</button>' +
+          ' towns, 3 counties. Take them all.">' + (saved ? 'NEW GAME' : 'INSERT COIN') + ' &#9654;</button>' +
       '</div>' +
       '</div>';
     document.body.appendChild(menu);
@@ -43,7 +98,7 @@
       menu.classList.add('picking');
       document.removeEventListener('keydown', pressStart);
       RV.Audio.play('select');
-      menu.querySelector('#menu-start').focus();
+      menu.querySelector(saved ? '#menu-continue' : '#menu-start').focus();
     }
     if (!pressedStart) {
       menu.addEventListener('click', pressStart);
@@ -62,22 +117,53 @@
         RV.Audio.play('click');
       });
     }
-    menu.querySelector('#menu-start').addEventListener('click', function (e) {
-      e.stopPropagation();
+    function go(fn) {
       document.removeEventListener('keydown', pressStart);
       pressedStart = true;
       RV.Audio.play('turn');
+      RV.Audio.startMusic();
       menu.remove();
-      start(diff);
+      fn();
+    }
+    menu.querySelector('#menu-start').addEventListener('click', function (e) {
+      e.stopPropagation();
+      if (!saved) { go(function () { start(diff); }); return; }
+      // A new game replaces the saved one: ask first.
+      RV.UI.openModal({
+        title: 'START A NEW GAME?',
+        body: '<div class="move-line">Your saved game (round ' + saved.round + ', ' +
+          saved.difficulty.toUpperCase() + ') will be lost.</div>',
+        okLabel: 'NEW GAME',
+        danger: true,
+        onOk: function () { go(function () { start(diff); }); },
+      });
     });
-    if (pressedStart) menu.querySelector('#menu-start').focus();
+    if (saved) {
+      menu.querySelector('#menu-continue').addEventListener('click', function (e) {
+        e.stopPropagation();
+        go(function () { resume(saved); });
+      });
+    }
+    if (pressedStart) menu.querySelector(saved ? '#menu-continue' : '#menu-start').focus();
   }
 
   function start(d) {
     RV.AITurn.reset();
+    RV.Taunts.reset();
     var st = RV.Game.create(d);
     st.log.unshift('The battle for the Pioneer Valley begins! (' + d.toUpperCase() + ')');
     RV.UI.setState(st);
+  }
+
+  // Pick a saved game back up where it stopped, mid-Machine-turn included.
+  function resume(st) {
+    RV.AITurn.reset();
+    RV.Taunts.reset();
+    RV.addLog(st, 'Game resumed.');
+    RV.UI.setState(st);
+    if (st.turn === 1) RV.AITurn.run();
+    else if (st.advance) RV.UI.openAdvanceModal(function () { RV.UI.refresh(); });
+    else RV.UI.onHumanTurn();
   }
 
   function showMenu() {
@@ -101,7 +187,8 @@
     showMenu();
   }
 
-  RV.Main = { start: start, showMenu: showMenu };
+  RV.Main = { start: start, resume: resume, showMenu: showMenu, autosave: autosave,
+              recordResult: recordResult, readSave: readSave };
 
   if (typeof document === 'undefined' || !document.getElementById) return; // non-browser (tests)
   if (document.readyState === 'loading') {

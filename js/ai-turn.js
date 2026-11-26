@@ -1,49 +1,82 @@
-/* Risk: Pioneer Valley — runs the Machine's turn, step by step. */
+/* Risk: Pioneer Valley — runs the Machine's turn, step by step.
+ *
+ * Speed (1X / 2X / 4X, remembered): at 1X every roll gets its own dice; at
+ * 2X and 4X the rolls against one town are resolved together and shown as
+ * one battle. skip() (a click or Space during its turn) finishes the turn
+ * with no animation at all.
+ */
 (function () {
   'use strict';
 
+  var SPEEDS = [1, 2, 4];
   var running = false;
+  var skipping = false;
   var gen = 0;          // bumped on reset so a stale loop from an old game dies
   var MAX_STEPS = 600;
+  var speed = 1;
+  try { speed = Number(localStorage.getItem('pvrisk.speed')) || 1; } catch (e) { /* private mode */ }
+  if (SPEEDS.indexOf(speed) < 0) speed = 1;
+
+  function wait(ms) { return skipping ? 0 : ms / speed; }
 
   function run() {
     var st = RV.UI.state;
     if (!st || st.turn !== 1 || st.over != null) return;
     if (running) return;
     running = true;
+    skipping = false;
     var myGen = gen;
+    var pending = null;   // an action already chosen while batching rolls
+    var spoke = false;    // one card-trade quip per turn is plenty
     RV.AI.resetTurn(st);
     RV.UI.setBusy(true);
+    RV.UI.refresh();
     var steps = 0;
-    setTimeout(step, 500);
+    setTimeout(step, wait(500));
 
     function alive() { return myGen === gen && RV.UI.state === st; }
+    function next(ms) { setTimeout(step, wait(ms)); }
 
     function step() {
       if (!alive()) return;
       steps++;
       if (st.over != null) { RV.UI.setBusy(false); RV.UI.showGameOver(st.over); running = false; return; }
       if (steps > MAX_STEPS) { finish(); return; }
-      var action = RV.AI.step(st);
+      var action = pending || RV.AI.step(st);
+      pending = null;
 
       switch (action.type) {
+        case 'trade': {
+          var t = RV.Game.tradeCards(st);
+          if (!t) { next(0); return; }
+          RV.addLog(st, 'The Machine trades in three cards for +' + t.armies + ' armies' +
+            (t.bonusTown >= 0 ? ' (+2 on ' + st.territories[t.bonusTown].name + ')' : '') + '.');
+          if (t.bonusTown >= 0) floatAt(t.bonusTown, '+2', '#7dff8a');
+          if (!skipping) RV.Audio.play('trade');
+          if (!spoke && t.armies >= 8) { spoke = true; RV.UI.say(RV.Taunts.pick('trade')); }
+          RV.UI.refresh();
+          next(450);
+          return;
+        }
+
         case 'place':
           RV.Game.placeArmies(st, action.to, action.n);
-          RV.UI.addFloat(
-            RV.centroid[action.to][0] * 16,
-            RV.centroid[action.to][1] * 16 - 8,
-            '+' + action.n, '#7dff8a');
+          floatAt(action.to, '+' + action.n, '#7dff8a');
           RV.addLog(st, 'The Machine reinforces ' +
             st.territories[action.to].name + ' (+' + action.n + ').');
-          RV.Audio.play('move');
+          if (!skipping) RV.Audio.play('move');
           RV.UI.refresh();
-          setTimeout(step, 260);
+          next(260);
           return;
 
         case 'attack':
-          RV.Combat.doAttack(st, action.from, action.to, function () {
-            setTimeout(step, 180);
-          }, { fast: true });
+          if (speed === 1 && !skipping) {
+            RV.Combat.doAttack(st, action.from, action.to, function () { next(180); }, { fast: true });
+            return;
+          }
+          var b = battle(action.from, action.to);
+          if (!b) { next(0); return; }
+          RV.Combat.showBattle(st, b, function () { next(180); }, { fast: true, speed: speed });
           return;
 
         case 'advance': {
@@ -54,7 +87,7 @@
               st.territories[adv.to].name + '.');
           }
           RV.UI.refresh();
-          setTimeout(step, 120);
+          next(120);
           return;
         }
 
@@ -63,16 +96,13 @@
             RV.addLog(st, 'The Machine shifts ' + action.n + ' from ' +
               st.territories[action.from].name + ' to ' +
               st.territories[action.to].name + '.');
-            RV.UI.addFloat(
-              RV.centroid[action.to][0] * 16,
-              RV.centroid[action.to][1] * 16 - 8,
-              '+' + action.n, st.players[1].color);
-            RV.Audio.play('move');
+            floatAt(action.to, '+' + action.n, st.players[1].color);
+            if (!skipping) RV.Audio.play('move');
           } else {
             st.fortified = true; // illegal move: don't loop on it
           }
           RV.UI.refresh();
-          setTimeout(step, 400);
+          next(400);
           return;
 
         case 'phase':
@@ -81,7 +111,7 @@
             return;
           }
           RV.UI.refresh();
-          setTimeout(step, 300);
+          next(300);
           return;
 
         case 'end':
@@ -90,20 +120,58 @@
       }
     }
 
+    // Roll against one town for as long as the Machine keeps choosing it.
+    // The AI is asked after every roll, exactly as at 1X, so speed never
+    // changes what it decides.
+    function battle(from, to) {
+      var out = { info: RV.Combat.names(st, from, to), rolls: 0, atkLoss: 0, defLoss: 0,
+                  captured: false, last: null };
+      for (;;) {
+        var r = RV.Game.attack(st, from, to);
+        if (!r) break;
+        out.rolls++;
+        out.atkLoss += r.atkLoss;
+        out.defLoss += r.defLoss;
+        out.last = r;
+        if (r.captured || st.over != null) { out.captured = r.captured; break; }
+        var nx = RV.AI.step(st);
+        if (nx.type === 'attack' && nx.from === from && nx.to === to) continue;
+        pending = nx;
+        break;
+      }
+      return out.rolls ? out : null;
+    }
+
+    function floatAt(i, text, color) {
+      RV.UI.addFloat(RV.centroid[i][0] * 16, RV.centroid[i][1] * 16 - 8, text, color);
+    }
+
     function finish() {
       if (!alive()) return;
       running = false;
-      RV.addLog(st, 'The Machine ends its turn.');
+      skipping = false;
+      var conquered = st.conquered;
+      RV.addLog(st, 'The Machine ends its turn' + (conquered ? ' and draws a card.' : '.'));
       RV.Game.endTurn(st);
       RV.UI.setBusy(false);
       RV.Audio.play('turn');
       RV.UI.refresh();
       if (st.over != null) RV.UI.showGameOver(st.over);
+      else RV.UI.onHumanTurn();
     }
   }
 
   RV.AITurn = {
     run: run,
-    reset: function () { running = false; gen++; },
+    reset: function () { running = false; skipping = false; gen++; },
+    running: function () { return running; },
+    skipping: function () { return skipping; },
+    skip: function () { if (running) skipping = true; },
+    speed: function () { return speed; },
+    cycleSpeed: function () {
+      speed = SPEEDS[(SPEEDS.indexOf(speed) + 1) % SPEEDS.length];
+      try { localStorage.setItem('pvrisk.speed', String(speed)); } catch (e) { /* ignore */ }
+      return speed;
+    },
   };
 })();

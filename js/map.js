@@ -48,11 +48,14 @@
 
   // --- adjacency ------------------------------------------------------------
   // Direct contact (incl. diagonal), plus contact across one river cell.
-  var adj = [];
-  for (i = 0; i < n; i++) adj.push({});
+  var adj = [], direct = [], bridgeCells = {};
+  for (i = 0; i < n; i++) { adj.push({}); direct.push({}); }
 
   function link(a, b) {
     if (a !== b) { adj[a][b] = true; adj[b][a] = true; }
+  }
+  function linkDirect(a, b) {
+    if (a !== b) { direct[a][b] = true; direct[b][a] = true; }
   }
 
   var DIRS = [[1, 0], [0, 1], [1, 1], [1, -1]];
@@ -69,11 +72,15 @@
           // a corner touch where the river bends between them isn't a border
           if (diagonal && riverSet[nx + ',' + y] && riverSet[x + ',' + ny]) continue;
           link(t, other);
+          linkDirect(t, other);
         } else if (!diagonal && riverSet[nx + ',' + ny] && !lakeSet[nx + ',' + ny]) {
           // bridge straight across one river cell
           var ax = x + DIRS[j][0] * 2, ay = y + DIRS[j][1] * 2;
-          if (ax >= 0 && ay >= 0 && ax < W && ay < H && grid[ay][ax] >= 0) {
-            link(t, grid[ay][ax]);
+          if (ax >= 0 && ay >= 0 && ax < W && ay < H && grid[ay][ax] >= 0 && grid[ay][ax] !== t) {
+            var o2 = grid[ay][ax];
+            link(t, o2);
+            var bk = Math.min(t, o2) + ',' + Math.max(t, o2);
+            (bridgeCells[bk] = bridgeCells[bk] || []).push([nx, ny, DIRS[j][0] !== 0 ? 'h' : 'v']);
           }
         }
       }
@@ -85,6 +92,22 @@
     var arr = [];
     for (j = 0; j < n; j++) if (i !== j && adj[i][j]) arr.push(j);
     adjList.push(arr);
+  }
+
+  // --- river crossings ----------------------------------------------------------
+  // A pair that only meets across a river: attacking over it costs a die.
+  // One bridge is drawn per crossing, on the middle river cell between them.
+  var crossing = {}, bridges = [];
+  Object.keys(bridgeCells).forEach(function (bk) {
+    var ab = bk.split(',').map(Number);
+    if (direct[ab[0]][ab[1]]) return;
+    crossing[bk] = true;
+    var cells = bridgeCells[bk];
+    var mid = cells[Math.floor(cells.length / 2)];
+    bridges.push({ a: ab[0], b: ab[1], x: mid[0], y: mid[1], dir: mid[2] });
+  });
+  function isCrossing(a, b) {
+    return !!crossing[Math.min(a, b) + ',' + Math.max(a, b)];
   }
 
   // --- centroids (snapped to a cell the town actually owns) ------------------
@@ -126,6 +149,8 @@
   RV.riverSet = riverSet;
   RV.lakeSet = lakeSet;
   RV.adj = adjList;
+  RV.isCrossing = isCrossing;
+  RV.bridges = bridges;
   RV.centroid = centroid;
   RV.regionOf = regionOf;
   RV.regionTowns = regionTowns;

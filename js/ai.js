@@ -1,6 +1,7 @@
 /* Risk: Pioneer Valley — the Machine (computer opponent).
  *
  * RV.AI.step(state) inspects the current state and returns ONE action:
+ *   {type:'trade'}               (cash in a set of cards)
  *   {type:'place',   to, n}
  *   {type:'attack',  from, to}
  *   {type:'advance', n}          (after a capture)
@@ -16,11 +17,24 @@
   // ratio: attack when (attackers - 1) >= defenders * ratio
   // regionAware: weight county completion / breaking the human's county
   // scatter: chance of a careless reinforcement
+  // terrainAware: how much the Machine respects mountains, hills, forests
+  //   and rivers when sizing up a fight (0 = ignores them)
+  // eagerTrade: cash in cards as soon as it has a set (else only at 5)
   var DIFF = {
-    easy:   { ratio: 1.7,  regionAware: 0.3, scatter: 0.35, stack: false, keepBack: 1.0, maxAttacks: 6 },
-    normal: { ratio: 1.2,  regionAware: 1.0, scatter: 0.0,  stack: true,  keepBack: 0.25, maxAttacks: 60 },
-    hard:   { ratio: 1.0,  regionAware: 1.6, scatter: 0.0,  stack: true,  keepBack: 0,   maxAttacks: 120 },
+    easy:   { ratio: 1.7,  regionAware: 0.3, scatter: 0.35, stack: false, keepBack: 1.0, maxAttacks: 6,   terrainAware: 0,   eagerTrade: false },
+    normal: { ratio: 1.2,  regionAware: 1.0, scatter: 0.0,  stack: true,  keepBack: 1.0,  maxAttacks: 60, terrainAware: 1,   eagerTrade: true },
+    hard:   { ratio: 1.0,  regionAware: 1.6, scatter: 0.0,  stack: true,  keepBack: 0,   maxAttacks: 120, terrainAware: 1,  eagerTrade: true },
   };
+
+  // How much harder a town is to take than its army count suggests.
+  var TERRAIN_FACTOR = { mountain: 1.45, hills: 1.25, forest: 1.2, plains: 1 };
+  function defenseFactor(state, from, to) {
+    var t = diff(state).terrainAware;
+    if (!t) return 1;
+    var f = TERRAIN_FACTOR[state.territories[to].terrain] || 1;
+    if (RV.isCrossing && RV.isCrossing(from, to)) f *= 1.2;
+    return 1 + (f - 1) * t;
+  }
 
   function diff(state) {
     return DIFF[state.difficulty] || DIFF.normal;
@@ -72,10 +86,13 @@
 
   // ------------------------------------------------------------ reinforce
   function reinforceStep(state) {
+    var d = diff(state);
+    if (RV.Game.canTrade(state) && (d.eagerTrade || RV.Game.mustTrade(state))) {
+      return { type: 'trade' };
+    }
     var pool = state.pool;
     if (pool <= 0) return { type: 'phase', phase: 'attack' };
 
-    var d = diff(state);
     var mine = myTowns(state);
 
     if (d.scatter && Math.random() < d.scatter) {
@@ -103,7 +120,7 @@
       var a = state.territories[i].armies;
       var opp = 0;
       en.forEach(function (j) {
-        var b = state.territories[j].armies;
+        var b = state.territories[j].armies * defenseFactor(state, i, j);
         var s = targetValue(state, j) * 6 / (b + 1);
         if (s > opp) opp = s;
       });
@@ -136,8 +153,9 @@
       var a = state.territories[from].armies;
       if (a < 2) return;
       enemyNeighbors(state, from).forEach(function (to) {
-        var b = state.territories[to].armies;
-        if (a - 1 < b * d.ratio && !(a >= 4 && b === 1)) return;
+        var raw = state.territories[to].armies;
+        var b = raw * defenseFactor(state, from, to);
+        if (a - 1 < b * d.ratio && !(a >= 4 && raw === 1)) return;
         var score = (a - 1 - b) + targetValue(state, to) * 2 - b * 0.5;
         if (!best || score > best.score) best = { from: from, to: to, score: score };
       });
@@ -194,6 +212,7 @@
       }
     },
     resetTurn: function (state) { state._aiAttacks = 0; },
+    defenseFactor: defenseFactor,
     _DIFF: DIFF,
   };
 })();

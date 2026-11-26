@@ -23,7 +23,8 @@
   var DIFF = params.get('diff') || 'normal';
   var frame = document.getElementById('game');
   var errors = [], notes = [], w, doc;
-  var stats = { clicks: 0, attacks: 0, captures: 0, advances: 0, fortifies: 0, aiTurns: 0 };
+  var stats = { clicks: 0, attacks: 0, blitzes: 0, captures: 0, advances: 0, fortifies: 0,
+                aiTurns: 0, trades: 0, undos: 0, skips: 0, taunts: 0 };
 
   function done(status) {
     var line = 'SMOKE: ' + status + ' | errors=' + (errors.length ? errors[0].slice(0, 300) : 'none') +
@@ -57,11 +58,27 @@
 
   async function humanTurn() {
     var st = w.RV.UI.state;
+    // cards: trade whenever the button allows it (it must, at 5 cards)
+    while (!doc.getElementById('btn-trade').disabled) {
+      var before = st.hands[0].length;
+      clickBtn('btn-trade');
+      if (st.hands[0].length !== before - 3) throw new Error('trade did not take 3 cards');
+      stats.trades++;
+    }
+    if (st.hands[0].length >= 5) throw new Error('holding 5+ cards with no trade allowed');
     // reinforce: one click at a time on the strongest front town
     var mine = w.RV.Game.territoriesOf(st, 0).filter(function (i) { return enemiesOf(st, i).length; });
     mine.sort(function (a, b) { return st.territories[b].armies - st.territories[a].armies; });
+    // undo: place one, take it back, and the pool is whole again
+    if (st.pool > 1) {
+      var pool0 = st.pool, a0 = st.territories[mine[0]].armies;
+      clickTown(mine[0]);
+      clickBtn('btn-undo');
+      if (st.pool !== pool0 || st.territories[mine[0]].armies !== a0) throw new Error('undo did not restore the pool');
+      stats.undos++;
+    }
     var guard = 0;
-    while (st.pool > 0 && guard++ < 60) { clickTown(mine[0]); await wait(5); }
+    while (st.pool > 0 && guard++ < 200) { clickTown(mine[0]); await wait(5); }
     if (st.phase !== 'attack') throw new Error('did not auto-advance to attack (phase ' + st.phase + ')');
 
     // attack while there is a 2:1 edge
@@ -75,9 +92,11 @@
       });
       if (!best) break;
       var owner0 = st.territories[best.to].owner;
+      var blitz = n % 2 === 1;   // every other attack is a shift-click blitz
       clickTown(best.from);
-      clickTown(best.to);
+      clickTown(best.to, blitz);
       stats.attacks++;
+      if (blitz) stats.blitzes++;
       await until(function () { return !w.RV.UI.busy() || modalOpen() || st.over != null; }, 8000, 'attack to settle');
       if (st.territories[best.to].owner !== owner0) stats.captures++;
       if (modalOpen()) {
@@ -112,7 +131,10 @@
     await until(function () { return st.turn === 1 || st.over != null; }, 4000, 'turn to pass');
   }
 
+  var started = false;
   frame.addEventListener('load', async function () {
+    if (started) return;   // the resume test reloads the frame itself
+    started = true;
     try {
       w = frame.contentWindow; doc = w.document;
       w.addEventListener('error', function (e) { errors.push((e.error && e.error.stack) || e.message); });
@@ -121,6 +143,29 @@
       clickBtn('menu-start');
       await until(function () { return w.RV.UI.state; }, 2000, 'game start');
       var st = w.RV.UI.state;
+      if (params.get('mode') === 'resume') {
+        // Play a turn, reload the page mid-Machine-turn, CONTINUE, and make
+        // sure the same game carries on to your next turn.
+        while (st.pool > 0) clickTown(w.RV.Game.territoriesOf(st, 0)[0], true);
+        clickBtn('btn-end');
+        await until(function () { return st.turn === 1; }, 2000, 'Machine turn');
+        await wait(1500);
+        var towns = JSON.stringify(w.RV.Main.readSave().territories.map(function (t) { return t.owner; }));
+        await new Promise(function (res) { frame.addEventListener('load', res, { once: true }); w.location.reload(); });
+        w = frame.contentWindow; doc = w.document;
+        w.addEventListener('error', function (e) { errors.push((e.error && e.error.stack) || e.message); });
+        await until(function () { return doc.getElementById('menu'); }, 5000, 'menu after reload');
+        doc.getElementById('menu').click();
+        await until(function () { return doc.getElementById('menu-continue'); }, 2000, 'CONTINUE');
+        clickBtn('menu-continue');
+        var st3 = w.RV.UI.state;
+        if (!st3 || st3.turn !== 1) throw new Error('resumed game is not mid-Machine-turn');
+        if (JSON.stringify(st3.territories.map(function (t) { return t.owner; })) !== towns) throw new Error('resumed map differs');
+        await until(function () { return st3.turn === 0 || st3.over != null; }, 60000, 'resumed Machine turn');
+        if (errors.length) throw new Error('page errors');
+        done('OK (resume mid-turn, round ' + st3.round + ')');
+        return;
+      }
       if (params.get('mode') === 'quit') {
         // Quit while the Machine is mid-turn, start a new game, and make sure
         // the old turn's loop doesn't leak into it.
@@ -135,7 +180,10 @@
         clickBtn('btn-quit');
         clickBtn('modal-ok');
         await until(function () { return doc.getElementById('menu-start'); }, 2000, 'menu after quit');
+        if (!doc.getElementById('menu-continue')) throw new Error('no CONTINUE after quit');
         clickBtn('menu-start');
+        if (!modalOpen() || doc.getElementById('modal-title').textContent !== 'START A NEW GAME?') throw new Error('no new-game confirm');
+        clickBtn('modal-ok');
         var st2 = w.RV.UI.state;
         await wait(6000);
         if (st2.turn !== 0 || st2.phase !== 'reinforce' || w.RV.UI.busy()) {
@@ -149,16 +197,28 @@
       while (st.over == null && st.round <= MAX_ROUNDS) {
         await humanTurn();
         if (st.over != null) break;
+        // every turn at a different Machine speed; every third one skipped
+        clickBtn('btn-speed');
+        if (stats.aiTurns % 3 === 2) {
+          await wait(700);
+          doc.getElementById('board').dispatchEvent(new w.MouseEvent('click', { bubbles: true, clientX: 5, clientY: 5 }));
+          if (st.turn === 1 && !w.RV.AITurn.skipping()) throw new Error('click did not skip the Machine turn');
+          stats.skips++;
+        }
         await until(function () { return st.turn === 0 || st.over != null; }, 120000, 'Machine turn');
         stats.aiTurns++;
+        stats.taunts = st.log.filter(function (l) { return typeof l === 'object' && l.kind === 'taunt'; }).length;
         await until(function () { return !w.RV.UI.busy() || st.over != null; }, 5000, 'idle');
         notes.push('round ' + st.round + ': you ' + w.RV.Game.territoriesOf(st, 0).length +
           ' towns / ' + w.RV.Game.totalArmies(st, 0) + ' armies, machine ' +
           w.RV.Game.territoriesOf(st, 1).length + ' / ' + w.RV.Game.totalArmies(st, 1));
       }
       if (st.over != null) {
-        await until(function () { return doc.querySelector('.gameover'); }, 5000, 'game over screen');
-        notes.push('game over: winner ' + st.over);
+        await until(function () { return doc.querySelector('.gameover .go-table'); }, 5000, 'results screen');
+        notes.push('game over: winner ' + st.over + ' | ' + doc.querySelector('.go-table').textContent);
+        if (w.RV.Main.readSave()) throw new Error('save not cleared after game over');
+      } else if (!w.RV.Main.readSave()) {
+        throw new Error('game in progress was not saved');
       }
       if (errors.length) throw new Error('page errors');
       done(st.over != null ? 'OK (game over, winner ' + st.over + ')' : 'OK (' + MAX_ROUNDS + ' rounds)');

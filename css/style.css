@@ -85,7 +85,7 @@ canvas { image-rendering: pixelated; image-rendering: crisp-edges; }
   display: inline-block;
 }
 
-#hud-center { text-align: center; }
+#hud-center { text-align: center; white-space: nowrap; }
 #turn-banner {
   font-size: 12px;
   color: var(--gold);
@@ -522,4 +522,161 @@ canvas { image-rendering: pixelated; image-rendering: crisp-edges; }
     width: calc(100vw - 32px);
     min-width: 0;
   }
+}
+
+/* ------------------------------------------------------- cards, blitz -- */
+.modal { z-index: 70; }
+
+.attack-row { display: flex; gap: 8px; }
+.attack-row #btn-attack { flex: 1; }
+.btn.toggle.on {
+  background: #6b1c2e;
+  color: #ffd0d4;
+  box-shadow: 0 3px 0 var(--line), inset 0 0 0 2px var(--red);
+}
+
+.pool-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 12px;
+}
+.pool-row .pool { margin-top: 0; }
+
+#hand {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-height: 70px;
+  margin-bottom: 10px;
+}
+.hand-empty { color: var(--dim); font-size: 8px; align-self: center; }
+.rcard {
+  width: 70px;
+  background: #e9e2cc;
+  border: 3px solid var(--line);
+  box-shadow: 0 3px 0 var(--line);
+  padding: 4px 2px 3px;
+  text-align: center;
+  color: #1c1c28;
+}
+.rcard-art { display: block; margin: 0 auto 3px; width: 32px; height: 32px; border: 2px solid #1c1c28; }
+.rcard-name {
+  font-size: 5px;
+  line-height: 1.5;
+  height: 15px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.rcard-kind { font-size: 5px; color: #6b5a3a; margin-top: 2px; }
+.rcard.owned .rcard-name { color: #1a5fc8; }
+.rcard.wild { background: #fff2b0; }
+.rcard.inset { box-shadow: 0 3px 0 var(--line), 0 0 0 2px var(--gold); transform: translateY(-3px); }
+.btn.trade { width: 100%; background: #1d4a26; color: var(--green); }
+.btn.trade:hover { background: #266b33; }
+.btn.trade.urgent { animation: urgent 0.6s steps(2) infinite; }
+@keyframes urgent { 50% { background: #3f8a2a; color: #fff; } }
+.nudge { animation: nudge 0.45s steps(3) 2; }
+@keyframes nudge { 50% { transform: translateX(4px); box-shadow: 0 0 0 3px var(--gold); } }
+
+/* ------------------------------------------------------- dice extras -- */
+.dice-card { flex-direction: column; gap: 12px; }
+.dice-main { display: flex; align-items: center; gap: 22px; }
+.dice-tags { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+.dice-tags:empty, .dice-summary:empty { display: none; }
+.tag {
+  font-size: 7px;
+  padding: 4px 6px;
+  border: 2px solid var(--line);
+  background: #0b1222;
+}
+.tag.river { color: #63b1f2; }
+.tag.mountain { color: #d4d4de; }
+.tag.hills { color: #e6a95a; }
+.tag.forest { color: #6fd27c; }
+.dice-summary { font-size: 10px; color: var(--text); }
+.dice-summary .atk, .dice-summary .def { color: #ff8a80; }
+.dice-summary .cap { color: var(--gold); }
+.die.covered { outline: 3px solid #6fd27c; outline-offset: 1px; }
+.die.spare { opacity: 0.3; }
+.die-badge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  font-size: 8px;
+  background: #e6a95a;
+  color: #1c1c28;
+  border: 2px solid var(--line);
+  padding: 2px 3px;
+}
+
+/* ------------------------------------------------------------- taunts -- */
+#hud-ai { position: relative; }
+.taunt {
+  position: absolute;
+  top: calc(100% + 12px);
+  right: 0;
+  width: max-content;
+  max-width: 340px;
+  background: #fff6e0;
+  color: #1c1c28;
+  border: 3px solid var(--line);
+  box-shadow: 0 4px 0 var(--line);
+  padding: 8px 10px;
+  font-size: 8px;
+  line-height: 1.7;
+  text-align: left;
+  white-space: normal;
+  z-index: 45;
+  opacity: 0;
+  transform: translateY(-6px);
+  transition: opacity 0.15s, transform 0.15s;
+  pointer-events: none;
+}
+.taunt::before {
+  content: "";
+  position: absolute;
+  top: -11px;
+  right: 18px;
+  border: 8px solid transparent;
+  border-bottom-color: var(--line);
+  border-top: 0;
+}
+.taunt.show { opacity: 1; transform: none; }
+.log-line.taunt { color: #ff8a80; }
+.log-line.taunt:last-child { color: #ffb0a8; }
+
+/* ------------------------------------------------------------ results -- */
+.gameover-card { max-width: 460px; }
+.go-chart {
+  display: block;
+  width: 320px;
+  height: 84px;
+  margin: 0 auto 14px;
+  border: 3px solid var(--line);
+  image-rendering: auto;
+}
+.go-table { text-align: left; margin-bottom: 20px; }
+.go-table .info-row span:last-child { text-align: right; }
+.go-table small { display: block; font-size: 6px; color: var(--dim); margin-top: 4px; }
+
+/* --------------------------------------------------------------- menu -- */
+.btn.continue {
+  width: 100%;
+  font-size: 12px;
+  padding: 12px 20px;
+  margin-bottom: 10px;
+  background: #1d4a26;
+  color: var(--green);
+  box-shadow: 0 5px 0 var(--line);
+}
+.btn.continue:hover { background: #266b33; }
+
+@media (max-width: 900px) {
+  .taunt { position: fixed; top: 12px; left: 16px; right: 16px; width: auto; max-width: none; }
+  .taunt::before { display: none; }
+  .top-actions { flex-wrap: wrap; }
 }

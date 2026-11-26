@@ -31,3 +31,10 @@ QUIT=$("$CHROME" --headless=new --disable-gpu --no-first-run --mute-audio \
   | sed -n 's:.*<title>\(.*\)</title>.*:\1:p')
 echo "$QUIT"
 [[ "$QUIT" == "SMOKE: OK"* ]]
+
+RESUME=$("$CHROME" --headless=new --disable-gpu --no-first-run --mute-audio \
+  --window-size=1460,1100 --virtual-time-budget=120000 \
+  --dump-dom "http://127.0.0.1:$PORT/dev/smoke.html?mode=resume" 2>/dev/null \
+  | sed -n 's:.*<title>\(.*\)</title>.*:\1:p')
+echo "$RESUME"
+[[ "$RESUME" == "SMOKE: OK"* ]]

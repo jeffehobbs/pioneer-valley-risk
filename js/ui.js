@@ -14,6 +14,22 @@
   var dirty = true;
   var gameOverShown = false;
   var modalOpen = false;
+  var arrow = null;        // {from, to, color} while a fight is on screen
+  var flashes = [];        // capture flashes: {i, color, life}
+  var shake = 0;           // frames of screen shake left
+  var townCells = [];      // [[x, y], ...] per territory, for flashes
+  var blitzOn = false;
+  var sayTimer = null;
+  var reduceMotion = typeof matchMedia === 'function' &&
+    matchMedia('(prefers-reduced-motion: reduce)').matches;
+  try { blitzOn = localStorage.getItem('pvrisk.blitz') === '1'; } catch (e) { /* private mode */ }
+
+  var GROUND = {
+    mountain: ['MOUNTAIN · +1 DIE', 'Defender rolls 3 dice; the best two count.'],
+    hills:    ['HILLS · +1', 'Defender adds 1 to their highest die.'],
+    forest:   ['FOREST · COVER', 'Defender loses at most 1 army per roll.'],
+    plains:   ['PLAINS', 'Open ground: no defense bonus.'],
+  };
 
   var ui = { state: null };
 
@@ -28,12 +44,23 @@
     BH = RV.MAP_H * CELL;
     tiles = RV.buildTiles(1);
     tiles.house2 = RV.paintSprite(RV.SPR.house, 2);
+    for (var t = 0; t < RV.TERRITORIES.length; t++) townCells.push([]);
+    for (var y = 0; y < RV.MAP_H; y++) {
+      for (var x = 0; x < RV.MAP_W; x++) if (RV.grid[y][x] >= 0) townCells[RV.grid[y][x]].push([x, y]);
+    }
     resize();
     window.addEventListener('resize', resize);
     canvas.addEventListener('click', onClick);
     canvas.addEventListener('mousemove', onMove);
     canvas.addEventListener('mouseleave', function () { hover = -1; dirty = true; refreshHUD(); });
     document.addEventListener('keydown', onKey);
+    // Any click outside the controls during the Machine's turn skips its animations.
+    document.addEventListener('click', function (e) {
+      if (!ui.state || ui.state.turn !== 1 || !RV.AITurn.running()) return;
+      if (e.target.closest && e.target.closest('button, .modal, .gameover')) return;
+      RV.AITurn.skip();
+      refreshHUD();
+    }, true);
     wireButtons();
     if (document.fonts && document.fonts.ready) {
       document.fonts.ready.then(function () { dirty = true; });
@@ -68,9 +95,11 @@
     drawTerrains();
     if (!ui.state) return;
     drawTints();
+    drawFlashes();
     drawBorders();
     drawSelection();
     drawMarkers();
+    drawArrows();
     drawFloats();
   }
 
@@ -95,6 +124,22 @@
         ctx.drawImage(set[RV.cellVariant(x, y, set.length)], px, py);
       }
     }
+    RV.bridges.forEach(drawBridge);
+  }
+
+  // A plank bridge on the river cell where two towns face each other.
+  function drawBridge(b) {
+    var px = b.x * CELL, py = b.y * CELL;
+    var h = b.dir === 'h';
+    function r(x, y, w, hh, c) {
+      ctx.fillStyle = c;
+      if (h) ctx.fillRect(px + x, py + y, w, hh); else ctx.fillRect(px + y, py + x, hh, w);
+    }
+    r(0, 3, CELL, 10, '#3a2410');      // shadow / rails
+    r(0, 4, CELL, 8, '#a8743a');       // deck
+    for (var k = 1; k < CELL; k += 3) r(k, 4, 1, 8, '#7a4f24'); // planks
+    r(0, 4, CELL, 1, '#d9a35c');       // rail highlight
+    r(0, 11, CELL, 1, '#5a3a1a');
   }
 
   function drawTints() {
@@ -265,6 +310,91 @@
     }
   }
 
+  // ---------------------------------------------------------- capture fx
+  function captureFx(i, color, quiet) {
+    flashes.push({ i: i, color: color, life: quiet ? 14 : 28, max: quiet ? 14 : 28 });
+    if (!quiet && !reduceMotion) shake = 16;
+    dirty = true;
+  }
+
+  function drawFlashes() {
+    for (var f = flashes.length - 1; f >= 0; f--) {
+      var fl = flashes[f];
+      var t = fl.life / fl.max;          // 1 -> 0
+      ctx.globalAlpha = 0.85 * t;
+      ctx.fillStyle = t > 0.6 ? '#ffffff' : fl.color;
+      townCells[fl.i].forEach(function (c) { ctx.fillRect(c[0] * CELL, c[1] * CELL, CELL, CELL); });
+      ctx.globalAlpha = 1;
+      if (--fl.life <= 0) flashes.splice(f, 1);
+    }
+  }
+
+  // ---------------------------------------------------------------- arrows
+  // The fight on screen, or (on your turn) the attack you're about to make.
+  function drawArrows() {
+    var st = ui.state;
+    if (arrow) { drawArrow(arrow.from, arrow.to, arrow.color, null); return; }
+    if (st.turn === 0 && st.phase === 'attack' && sel >= 0 && hover >= 0 &&
+        targetsOf(sel).indexOf(hover) >= 0 && !animating && !modalOpen) {
+      drawArrow(sel, hover, st.players[0].color, groundLabel(sel, hover));
+    }
+  }
+
+  function groundLabel(from, to) {
+    var m = RV.Game.combatMods(ui.state, from, to), parts = [];
+    if (m.river) parts.push('RIVER -1 DIE');
+    if (m.terrain === 'mountain') parts.push('MOUNTAIN +1 DIE');
+    if (m.terrain === 'hills') parts.push('HILLS +1');
+    if (m.terrain === 'forest') parts.push('COVER');
+    return parts.join(' · ');
+  }
+
+  function drawArrow(from, to, color, label) {
+    var ax = RV.centroid[from][0] * CELL, ay = RV.centroid[from][1] * CELL - 4;
+    var bx = RV.centroid[to][0] * CELL, by = RV.centroid[to][1] * CELL - 4;
+    var dx = bx - ax, dy = by - ay, len = Math.sqrt(dx * dx + dy * dy);
+    if (len < 24) return;
+    var ux = dx / len, uy = dy / len, nx = -uy, ny = ux;
+    var sx = ax + ux * 12, sy = ay + uy * 12;
+    var ex = bx - ux * 14, ey = by - uy * 14;      // arrow tip
+    var hx = ex - ux * 12, hy = ey - uy * 12;      // base of the head
+    ctx.save();
+    ctx.lineCap = 'butt';
+    ctx.strokeStyle = 'rgba(10,10,20,0.9)';
+    ctx.lineWidth = 8;
+    seg(sx, sy, hx, hy);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 4;
+    ctx.setLineDash([6, 4]);
+    ctx.lineDashOffset = -(pulse % 40) * 0.5;
+    seg(sx, sy, hx, hy);
+    ctx.setLineDash([]);
+    tri(ex + ux * 3, ey + uy * 3, hx - ux * 2 + nx * 11, hy - uy * 2 + ny * 11,
+        hx - ux * 2 - nx * 11, hy - uy * 2 - ny * 11, 'rgba(10,10,20,0.9)');
+    tri(ex, ey, hx + nx * 8, hy + ny * 8, hx - nx * 8, hy - ny * 8, color);
+    if (label) {
+      ctx.font = '6px "Press Start 2P", monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      var mx = (sx + hx) / 2, my = (sy + hy) / 2 - 12;
+      var w = ctx.measureText(label).width + 8;
+      mx = Math.max(w / 2 + 2, Math.min(BW - w / 2 - 2, mx));
+      ctx.fillStyle = 'rgba(10,10,20,0.9)';
+      ctx.fillRect(Math.round(mx - w / 2), Math.round(my - 6), Math.round(w), 12);
+      ctx.fillStyle = '#ffd23f';
+      ctx.fillText(label, mx, my + 1);
+    }
+    ctx.restore();
+
+    function seg(x1, y1, x2, y2) {
+      ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+    }
+    function tri(x1, y1, x2, y2, x3, y3, c) {
+      ctx.fillStyle = c;
+      ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.lineTo(x3, y3); ctx.closePath(); ctx.fill();
+    }
+  }
+
   // --------------------------------------------------------------- floats
   function addFloat(x, y, text, color) {
     floats.push({ x: x, y: y, text: text, color: color, life: 60 });
@@ -310,9 +440,57 @@
   }
 
   function onKey(e) {
-    if (e.key === 'Escape' && sel >= 0 && !modalOpen) {
+    if (modalOpen || !ui.state) return;
+    if (e.key === 'Escape' && sel >= 0) {
       sel = -1; dirty = true; refreshHUD();
+    } else if ((e.metaKey || e.ctrlKey) && (e.key === 'z' || e.key === 'Z')) {
+      e.preventDefault();
+      doUndo();
+    } else if (e.key === ' ' && ui.state.turn === 1 && RV.AITurn.running()) {
+      e.preventDefault();
+      RV.AITurn.skip();
+      refreshHUD();
+    } else if ((e.key === 'b' || e.key === 'B') && !e.metaKey && !e.ctrlKey) {
+      toggleBlitz();
     }
+  }
+
+  function toggleBlitz() {
+    blitzOn = !blitzOn;
+    try { localStorage.setItem('pvrisk.blitz', blitzOn ? '1' : '0'); } catch (err) { /* ignore */ }
+    RV.Audio.play('click');
+    refreshHUD();
+  }
+
+  function doUndo() {
+    var st = ui.state;
+    if (busy() || !RV.Game.canUndo(st)) return;
+    var u = RV.Game.undoPlacement(st);
+    if (!u) return;
+    sel = -1;
+    RV.Audio.play('undo');
+    addFloat(RV.centroid[u.i][0] * CELL, RV.centroid[u.i][1] * CELL - 8, '-' + u.n, '#ffd23f');
+    refreshHUD();
+  }
+
+  function doTrade() {
+    var st = ui.state;
+    if (busy() || !RV.Game.canTrade(st)) return;
+    var t = RV.Game.tradeCards(st);
+    if (!t) return;
+    sel = -1;
+    RV.Audio.play('trade');
+    RV.addLog(st, 'You trade in three cards for +' + t.armies + ' armies' +
+      (t.bonusTown >= 0 ? ' (+2 on ' + st.territories[t.bonusTown].name + ')' : '') + '.');
+    if (t.bonusTown >= 0) {
+      addFloat(RV.centroid[t.bonusTown][0] * CELL, RV.centroid[t.bonusTown][1] * CELL - 8, '+2', '#7dff8a');
+    }
+    refreshHUD();
+  }
+
+  function cardName(c) {
+    if (c.kind === 'wild') return 'Wild card';
+    return RV.TERRITORIES[c.town].name + ' — ' + c.kind.charAt(0).toUpperCase() + c.kind.slice(1);
   }
 
   function onClick(e) {
@@ -323,7 +501,11 @@
     var terr = st.territories[t];
 
     if (st.phase === 'reinforce') {
-      if (terr.owner === 0 && st.pool > 0) {
+      if (RV.Game.mustTrade(st)) {
+        RV.addLog(st, 'You hold ' + st.hands[0].length + ' cards: trade in a set first.');
+        RV.Audio.play('lose');
+        nudge('btn-trade');
+      } else if (terr.owner === 0 && st.pool > 0) {
         var n = e.shiftKey ? st.pool : 1;
         RV.Game.placeArmies(st, t, n);
         RV.Audio.play('move');
@@ -352,7 +534,8 @@
         }
       } else if (sel >= 0 && RV.adj[sel].indexOf(t) >= 0) {
         var from = sel;
-        RV.Combat.doAttack(st, from, t, function () {
+        var how = (e.shiftKey || blitzOn) ? 'doBlitz' : 'doAttack';
+        RV.Combat[how](st, from, t, function () {
           // keep the source selected for follow-up attacks
           sel = st.territories[from].armies >= 2 ? from : -1;
           dirty = true;
@@ -415,21 +598,69 @@
       }
       endHumanTurn();
     });
-    document.getElementById('btn-sound').addEventListener('click', function () {
-      var on = RV.Audio.toggle();
-      this.textContent = on ? 'SND' : 'MUTE';
-      this.classList.toggle('off', !on);
-    });
+    var snd = document.getElementById('btn-sound');
+    function paintSnd() {
+      snd.textContent = RV.Audio.isOn() ? 'SND' : 'SND OFF';
+      snd.classList.toggle('off', !RV.Audio.isOn());
+    }
+    paintSnd();
+    snd.addEventListener('click', function () { RV.Audio.toggle(); paintSnd(); });
+    var mus = document.getElementById('btn-music');
+    function paintMus() {
+      mus.textContent = RV.Audio.musicOn() ? 'MUSIC' : 'MUSIC OFF';
+      mus.classList.toggle('off', !RV.Audio.musicOn());
+    }
+    paintMus();
+    mus.addEventListener('click', function () { RV.Audio.toggleMusic(); paintMus(); });
+    var spd = document.getElementById('btn-speed');
+    function paintSpd() { spd.textContent = 'AI ' + RV.AITurn.speed() + 'X'; }
+    paintSpd();
+    spd.addEventListener('click', function () { RV.AITurn.cycleSpeed(); RV.Audio.play('click'); paintSpd(); });
+    document.getElementById('btn-undo').addEventListener('click', doUndo);
+    document.getElementById('btn-trade').addEventListener('click', doTrade);
+    document.getElementById('btn-blitz').addEventListener('click', toggleBlitz);
     document.getElementById('btn-quit').addEventListener('click', function () {
       if (!ui.state || ui.state.over != null) { RV.Main.showMenu(); return; }
       openModal({
         title: 'QUIT GAME?',
-        body: '<div class="move-line">This battle will be lost.</div>',
+        body: '<div class="move-line">Your game is saved. CONTINUE picks it up from the title screen.</div>',
         okLabel: 'QUIT',
-        danger: true,
         onOk: function () { RV.Main.showMenu(); },
       });
     });
+  }
+
+  // Briefly flash a control to point at it.
+  function nudge(id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.classList.remove('nudge');
+    void el.offsetWidth;
+    el.classList.add('nudge');
+  }
+
+  // The Machine speaks: a bubble under its name, and a line in the log.
+  function say(line) {
+    if (!line || !ui.state) return;
+    RV.addLog(ui.state, { text: 'THE MACHINE: "' + line + '"', kind: 'taunt' });
+    var el = document.getElementById('taunt');
+    el.textContent = line;
+    el.classList.add('show');
+    if (!(RV.AITurn.skipping && RV.AITurn.skipping())) RV.Audio.play('taunt');
+    clearTimeout(sayTimer);
+    sayTimer = setTimeout(function () { el.classList.remove('show'); }, 2600 + line.length * 45);
+    refreshHUD();
+  }
+
+  // Your turn begins (after the Machine's).
+  function onHumanTurn() {
+    var st = ui.state;
+    if (!st || st.turn !== 0) return;
+    if (RV.Game.mustTrade(st)) {
+      RV.addLog(st, 'You hold ' + st.hands[0].length + ' cards: trade in a set first.');
+      nudge('btn-trade');
+    }
+    refreshHUD();
   }
 
   function endHumanTurn() {
@@ -437,6 +668,10 @@
     sel = -1;
     RV.addLog(st, 'You end your turn.');
     RV.Game.endTurn(st);
+    if (st.drawn) {
+      RV.addLog(st, 'You took a town, so you draw a card: ' + cardName(st.drawn) + '.');
+      RV.Audio.play('card');
+    }
     RV.Audio.play('turn');
     dirty = true;
     refreshHUD();
@@ -577,19 +812,23 @@
       document.getElementById('sw-' + side).style.background = p.color;
       document.getElementById('hud-' + side + '-name').textContent = p.name;
       document.getElementById('hud-' + side + '-stats').textContent =
-        RV.Game.territoriesOf(st, i).length + ' TOWNS · ' + RV.Game.totalArmies(st, i) + ' ARMIES';
+        RV.Game.territoriesOf(st, i).length + ' TOWNS · ' + RV.Game.totalArmies(st, i) + ' ARMIES' +
+        // your own cards are on the side panel; the Machine's count is worth watching
+        (i === 1 ? ' · ' + st.hands[1].length + (st.hands[1].length === 1 ? ' CARD' : ' CARDS') : '');
     }
     var myTurn = st.turn === 0;
+    var skipping = !myTurn && RV.AITurn.skipping();
     document.getElementById('turn-banner').textContent =
       st.over != null ? 'GAME OVER' :
-      (myTurn ? 'YOUR TURN' : 'THE MACHINE IS PLOTTING...');
+      (myTurn ? 'YOUR TURN' : (skipping ? 'SKIPPING...' : 'THE MACHINE IS PLOTTING...'));
     var phaseNames = {
       reinforce: 'REINFORCE',
       attack: 'ATTACK',
       fortify: 'FORTIFY',
     };
     document.getElementById('phase-banner').textContent =
-      st.over != null ? '' : 'ROUND ' + st.round + ' · ' + phaseNames[st.phase];
+      st.over != null ? '' : 'ROUND ' + st.round + ' · ' + phaseNames[st.phase] +
+      (!myTurn && !skipping && RV.AITurn.running() ? ' · CLICK TO SKIP' : '');
     document.getElementById('pool-count').textContent = st.phase === 'reinforce' ? st.pool : 0;
     document.getElementById('reinforce-pool').classList.toggle('empty', !(st.phase === 'reinforce' && st.pool > 0));
     document.querySelectorAll('.btn.phase').forEach(function (b) {
@@ -598,6 +837,11 @@
       b.disabled = !myTurn || (ph !== st.phase && !RV.Game.canSetPhase(st, ph));
     });
     document.getElementById('btn-end').disabled = !myTurn || st.over != null || st.pool > 0;
+    document.getElementById('btn-undo').disabled = !myTurn || !RV.Game.canUndo(st);
+    var blitzBtn = document.getElementById('btn-blitz');
+    blitzBtn.classList.toggle('on', blitzOn);
+    blitzBtn.textContent = blitzOn ? 'BLITZ ON' : 'BLITZ';
+    refreshCards(st, myTurn);
 
     // info card
     var t = sel >= 0 ? sel : (hover >= 0 ? hover : -1);
@@ -610,6 +854,9 @@
       document.getElementById('info-owner').style.color = st.players[terr.owner].color;
       document.getElementById('info-armies').textContent = terr.armies;
       document.getElementById('info-county').textContent = RV.REGIONS[RV.regionOf[t]].name.toUpperCase();
+      var g = GROUND[terr.terrain] || GROUND.plains;
+      document.getElementById('info-ground').textContent = g[0];
+      document.getElementById('info-ground-row').title = g[1];
       document.getElementById('info-borders').innerHTML = RV.adj[t].map(function (j) {
         return '<span style="color:' + st.players[st.territories[j].owner].color + '">' +
           st.territories[j].name + '</span>';
@@ -621,6 +868,8 @@
       document.getElementById('info-owner').style.color = '';
       document.getElementById('info-armies').textContent = '—';
       document.getElementById('info-county').textContent = '—';
+      document.getElementById('info-ground').textContent = '—';
+      document.getElementById('info-ground-row').title = '';
       document.getElementById('info-borders').textContent = '—';
     }
 
@@ -647,13 +896,57 @@
     var logEl = document.getElementById('log');
     logEl.innerHTML = st.log.slice(-7).map(function (l) {
       var d = document.createElement('div');
-      d.className = 'log-line';
-      d.textContent = l;
+      d.className = 'log-line' + (typeof l === 'object' && l.kind ? ' ' + l.kind : '');
+      d.textContent = typeof l === 'object' ? l.text : l;
       return d.outerHTML;
     }).join('');
+
+    RV.Main.autosave(st);
+  }
+
+  // Your hand, the set TRADE would use, and what it's worth.
+  var handKey = '';
+  function refreshCards(st, myTurn) {
+    var hand = st.hands[0];
+    var set = RV.Game.bestSet(st, 0) || [];
+    var key = JSON.stringify(hand) + '|' + set.join(',');
+    if (key !== handKey) {
+      handKey = key;
+      var el = document.getElementById('hand');
+      el.innerHTML = '';
+      if (!hand.length) {
+        el.innerHTML = '<div class="hand-empty">—</div>';
+      }
+      hand.forEach(function (c, i) {
+        var d = document.createElement('div');
+        d.className = 'rcard ' + c.kind + (set.indexOf(i) >= 0 ? ' inset' : '') +
+          (c.town >= 0 && st.territories[c.town].owner === 0 ? ' owned' : '');
+        d.title = cardName(c) + (c.town >= 0 && st.territories[c.town].owner === 0
+          ? ' (you hold it: +2 there when traded)' : '');
+        var art = c.kind === 'wild'
+          ? RV.paintSprite(RV.SPR.star, 2)
+          : RV.paintSprite(RV.SPR[RV.TERRAIN_TILES[c.kind]][0], 2);
+        art.className = 'rcard-art';
+        d.appendChild(art);
+        var nm = document.createElement('div');
+        nm.className = 'rcard-name';
+        nm.textContent = c.kind === 'wild' ? 'WILD' : (RV.TERRITORIES[c.town].label || RV.TERRITORIES[c.town].name).toUpperCase();
+        d.appendChild(nm);
+        var kd = document.createElement('div');
+        kd.className = 'rcard-kind';
+        kd.textContent = c.kind === 'wild' ? 'ANY' : c.kind.toUpperCase();
+        d.appendChild(kd);
+        el.appendChild(d);
+      });
+    }
+    var tb = document.getElementById('btn-trade');
+    tb.textContent = 'TRADE +' + RV.Game.tradeValue(st);
+    tb.disabled = !myTurn || !RV.Game.canTrade(st);
+    tb.classList.toggle('urgent', myTurn && RV.Game.mustTrade(st));
   }
 
   // ------------------------------------------------------------ game over
+  // Results: what happened, the round the tide turned, and your record.
   function showGameOver(winner) {
     if (gameOverShown) return;
     gameOverShown = true;
@@ -661,26 +954,97 @@
     var youWon = winner === 0;
     var st = ui.state;
     RV.Audio.play(youWon ? 'win' : 'loseAll');
+    var rec = RV.Main.recordResult(st.difficulty, youWon);
+    var S = st.stats;
+    var c0 = st.players[0].color, c1 = st.players[1].color;
+
+    function pair(a, b) {
+      return '<span style="color:' + c0 + '">' + a + '</span> · <span style="color:' + c1 + '">' + b + '</span>';
+    }
+    var big = '—';
+    if (S.biggest) {
+      var bb = S.biggest;
+      big = st.territories[bb.from].name.toUpperCase() + ' &gt; ' + st.territories[bb.to].name.toUpperCase() +
+        '<small>ROUND ' + bb.round + ' · ' + (bb.by === 0 ? 'YOU' : 'THE MACHINE') + ' · ' +
+        (bb.atkLoss + bb.defLoss) + ' FELL' + (bb.captured ? ' · TAKEN' : ' · HELD') + '</small>';
+    }
+    var tide = tideRound(S.history, winner);
+    var rows = [
+      ['TOWNS TAKEN', pair(S.taken[0], S.taken[1])],
+      ['ARMIES LOST', pair(S.lost[0], S.lost[1])],
+      ['CARD TRADES', pair(S.traded[0], S.traded[1])],
+      ['BIGGEST BATTLE', big],
+      ['TIDE TURNED', tide == null ? 'NEVER IN DOUBT' : 'ROUND ' + tide],
+      [st.difficulty.toUpperCase() + ' RECORD', rec.w + 'W – ' + rec.l + 'L'],
+    ];
+
     var overlay = document.createElement('div');
     overlay.className = 'gameover';
     overlay.innerHTML =
       '<div class="gameover-card">' +
-        '<h2 class="' + (youWon ? 'win' : 'lose') + '">' +
-          (youWon ? 'VICTORY!' : 'DEFEAT') + '</h2>' +
-        '<div class="go-stats">ROUND ' + (st ? st.round : '?') + '</div>' +
+        '<h2 class="' + (youWon ? 'win' : 'lose') + '">' + (youWon ? 'VICTORY!' : 'DEFEAT') + '</h2>' +
+        '<div class="go-stats">ROUND ' + st.round + ' · ' + st.difficulty.toUpperCase() + '</div>' +
+        '<canvas class="go-chart" width="320" height="84" title="Towns held each round"></canvas>' +
+        '<div class="go-table">' + rows.map(function (r) {
+          return '<div class="info-row"><span class="k">' + r[0] + '</span><span>' + r[1] + '</span></div>';
+        }).join('') + '</div>' +
         '<button id="go-restart" class="btn">PLAY AGAIN</button>' +
       '</div>';
     document.body.appendChild(overlay);
+    drawChart(overlay.querySelector('.go-chart'), S.history, st, tide);
     document.getElementById('go-restart').addEventListener('click', function () {
       overlay.remove();
       RV.Main.showMenu();
     });
   }
 
+  // The round after the winner last trailed (or drew) on towns; null if
+  // they led from the first round on.
+  function tideRound(history, winner) {
+    var last = -1;
+    history.forEach(function (h, k) { if (h.c[winner] <= h.c[1 - winner]) last = k; });
+    if (last < 0) return null;
+    var nxt = history[last + 1];
+    return nxt ? nxt.round : history[last].round;
+  }
+
+  function drawChart(cv, history, st, tide) {
+    if (!cv || !history.length) return;
+    var c = cv.getContext('2d');
+    var W = cv.width, H = cv.height, pad = 6, n = RV.TERRITORIES.length;
+    c.fillStyle = '#0b1222';
+    c.fillRect(0, 0, W, H);
+    c.fillStyle = 'rgba(255,255,255,0.12)';
+    c.fillRect(pad, Math.round(H / 2), W - pad * 2, 1);          // the halfway line
+    var xs = function (k) { return pad + (history.length < 2 ? 0 : k * (W - pad * 2) / (history.length - 1)); };
+    var ys = function (v) { return H - pad - v * (H - pad * 2) / n; };
+    if (tide != null) {
+      history.forEach(function (h, k) {
+        if (h.round === tide) { c.fillStyle = 'rgba(255,210,63,0.35)'; c.fillRect(Math.round(xs(k)) - 1, pad, 2, H - pad * 2); }
+      });
+    }
+    [1, 0].forEach(function (p) {
+      c.strokeStyle = st.players[p].color;
+      c.lineWidth = 3;
+      c.beginPath();
+      history.forEach(function (h, k) {
+        var x = Math.round(xs(k)), y = Math.round(ys(h.c[p]));
+        if (k) c.lineTo(x, y); else c.moveTo(x, y);
+      });
+      c.stroke();
+    });
+  }
+
   // ------------------------------------------------------------- loop
   function renderLoop() {
     pulse++;
-    if (dirty || floats.length || sel >= 0) {
+    if (shake > 0) {
+      shake--;
+      var m = shake * 0.45;
+      canvas.style.transform = shake ? 'translate(' + Math.round((Math.random() * 2 - 1) * m) + 'px,' +
+        Math.round((Math.random() * 2 - 1) * m) + 'px)' : '';
+    }
+    if (dirty || floats.length || sel >= 0 || arrow || flashes.length) {
       dirty = false;
       render();
     }
@@ -695,6 +1059,13 @@
       sel = -1; hover = -1; animating = false; modalOpen = false;
       gameOverShown = false;
       floats.length = 0;
+      flashes.length = 0;
+      arrow = null;
+      shake = 0;
+      handKey = '';
+      if (canvas) canvas.style.transform = '';
+      var tb = document.getElementById('taunt');
+      if (tb) tb.classList.remove('show');
       document.getElementById('modal').classList.add('hidden');
       var go = document.querySelector('.gameover');
       if (go) go.remove();
@@ -708,6 +1079,12 @@
     refresh: refreshHUD,
     showGameOver: showGameOver,
     openAdvanceModal: openAdvanceModal,
+    openModal: openModal,
+    onHumanTurn: onHumanTurn,
+    captureFx: captureFx,
+    say: say,
+    setArrow: function (from, to, color) { arrow = { from: from, to: to, color: color }; dirty = true; },
+    clearArrow: function () { arrow = null; dirty = true; },
     resize: resize,
     getSel: function () { return sel; },
     setSel: function (i) { sel = i; dirty = true; },

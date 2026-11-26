@@ -43,10 +43,13 @@
         <span id="hud-ai-stats" class="stats"></span>
         <span id="hud-ai-name"></span>
         <span class="swatch" id="sw-ai"></span>
+        <div id="taunt" class="taunt" aria-live="polite"></div>
       </div>
     </div>
     <div class="top-actions">
-      <button id="btn-sound" class="btn small" title="Sound on/off">SND</button>
+      <button id="btn-speed" class="btn small" title="How fast the Machine plays. Click the board during its turn to skip ahead.">AI 1X</button>
+      <button id="btn-music" class="btn small" title="Music on/off">MUSIC</button>
+      <button id="btn-sound" class="btn small" title="Sound effects on/off">SND</button>
     </div>
   </header>
 
@@ -57,19 +60,33 @@
         <div class="phase-row">
           <button id="btn-reinforce" class="btn phase active" data-phase="reinforce"
             title="Click your towns to place armies (shift-click places them all). Holding a whole county adds its bonus.">REINFORCE</button>
-          <button id="btn-attack" class="btn phase" data-phase="attack"
-            title="Click one of your towns with 2+ armies, then a red-outlined neighbor. You roll up to 3 dice, the defender up to 2; ties go to the defender.">ATTACK</button>
+          <div class="attack-row">
+            <button id="btn-attack" class="btn phase" data-phase="attack"
+              title="Click one of your towns with 2+ armies, then a red-outlined neighbor. You roll up to 3 dice, the defender up to 2; ties go to the defender. Mountains, hills, forests and rivers favor the defender.">ATTACK</button>
+            <button id="btn-blitz" class="btn small toggle"
+              title="Blitz: keep rolling until the town falls or you're down to 3 armies (B). Shift-click a target to blitz once.">BLITZ</button>
+          </div>
           <button id="btn-fortify" class="btn phase" data-phase="fortify"
             title="Move armies once between two of your towns that are linked by your territory. Moving ends your turn.">FORTIFY</button>
         </div>
-        <div id="reinforce-pool" class="pool" title="Armies left to place">POOL <b id="pool-count">0</b></div>
+        <div class="pool-row">
+          <div id="reinforce-pool" class="pool" title="Armies left to place">POOL <b id="pool-count">0</b></div>
+          <button id="btn-undo" class="btn small" title="Take back your last placement (Cmd/Ctrl-Z). Works until your first attack.">UNDO</button>
+        </div>
         <button id="btn-end" class="btn end" title="End your turn">END TURN &#9654;</button>
+      </section>
+      <section id="cards-card" class="card"
+        title="Take a town on your turn to draw a card. Trade three of a kind or three different terrains for armies; each trade is worth more. A card showing a town you hold puts +2 there. At 5 cards you must trade.">
+        <h3>CARDS</h3>
+        <div id="hand"></div>
+        <button id="btn-trade" class="btn trade">TRADE +4</button>
       </section>
       <section id="info-card" class="card idle">
         <h3 id="info-name">—</h3>
         <div class="info-row"><span class="k">OWNER</span><span id="info-owner">—</span></div>
         <div class="info-row"><span class="k">ARMIES</span><span id="info-armies">—</span></div>
         <div class="info-row"><span class="k">COUNTY</span><span id="info-county">—</span></div>
+        <div class="info-row" id="info-ground-row"><span class="k">GROUND</span><span id="info-ground">—</span></div>
         <div class="info-row"><span class="k">BORDERS</span><span id="info-borders">—</span></div>
       </section>
       <section class="card" title="Hold every town in a county for a bonus each turn">
@@ -99,6 +116,7 @@
 <script src="js/map.js"></script>
 <script src="js/game.js"></script>
 <script src="js/ai.js"></script>
+<script src="js/taunts.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/combat.js"></script>
 <script src="js/ai-turn.js"></script>
