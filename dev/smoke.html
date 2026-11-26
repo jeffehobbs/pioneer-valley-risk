@@ -133,6 +133,15 @@
       clickBtn('menu-start');
       await until(function () { return w.RV.UI.state; }, 2000, 'game start');
       var st = w.RV.UI.state;
+      // How to play: shown on the first game (fresh profile), and from ?.
+      function isHelp() { return modalOpen() && doc.getElementById('modal-title').textContent === 'HOW TO PLAY'; }
+      var helpFirst = isHelp();
+      if (helpFirst) clickBtn('modal-ok');
+      if (modalOpen()) throw new Error('help did not close');
+      clickBtn('btn-help');
+      if (!isHelp() || !doc.querySelector('#modal-body .help-phases')) throw new Error('? did not open help');
+      clickBtn('modal-ok');
+      if (!helpFirst) throw new Error('help not shown on the first game');  // headless Chrome starts with a fresh profile
       if (params.get('mode') === 'resume') {
         // Play a turn, reload the page mid-computer-turn, CONTINUE, and make
         // sure the same game carries on to your next turn.

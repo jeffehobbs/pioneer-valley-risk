@@ -657,3 +657,42 @@ canvas { image-rendering: pixelated; image-rendering: crisp-edges; }
   .tag { font-size: 6px; }
   .die-badge { top: -6px; right: -6px; font-size: 6px; padding: 1px 2px; }
 }
+
+/* ------------------------------------------------------ how to play -- */
+.top-btns { display: flex; gap: 6px; }
+.btn.help { color: var(--gold); min-width: 34px; }
+.modal.wide .modal-card { max-width: 540px; }
+.modal.wide #modal-body {
+  max-height: calc(100vh - 170px);
+  max-height: calc(100dvh - 170px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+}
+.help { text-align: left; font-size: 8px; line-height: 1.9; }
+.help p { margin: 0; }
+.help b { color: var(--gold); }
+.help b.you { color: var(--cyan); }
+.help-goal { font-size: 9px; text-align: center; margin-bottom: 16px !important; }
+.help-sub { color: var(--dim); margin-bottom: 8px !important; }
+.help-phases, .help-terrain { list-style: none; margin-bottom: 16px; }
+.help-phase {
+  display: flex; gap: 12px; align-items: flex-start;
+  padding: 10px; margin-bottom: 6px;
+  background: var(--panel-2); border: 2px solid var(--line);
+}
+.help-phase b { display: block; margin-bottom: 4px; }
+.help-num {
+  flex: none; width: 22px; height: 22px;
+  display: flex; align-items: center; justify-content: center;
+  background: #6b5410; color: var(--gold); border: 2px solid var(--line);
+  font-size: 9px;
+}
+.help-terrain li { display: flex; gap: 10px; align-items: baseline; margin-bottom: 6px; }
+.help-terrain .tag { flex: none; width: 82px; text-align: center; }
+.help-end { text-align: center; color: var(--green); }
+@media (max-width: 600px) {
+  .help { font-size: 7px; }
+  .help-phase { padding: 8px; gap: 8px; }
+  .help-terrain .tag { width: 64px; }
+}

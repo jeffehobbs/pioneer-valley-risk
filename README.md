@@ -15,6 +15,8 @@ python3 -m http.server 8000
 
 Then browse to http://localhost:8000.
 
+A HOW TO PLAY popup opens on your first game; the **?** button next to QUIT brings it back.
+
 ## Rules
 
 - **Reinforce:** you get max(3, towns ÷ 3) armies, plus a county bonus for each county you hold

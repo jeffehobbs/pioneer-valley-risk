@@ -154,6 +154,7 @@
     var st = RV.Game.create(d);
     st.log.unshift('The battle for the Pioneer Valley begins! (' + d.toUpperCase() + ')');
     RV.UI.setState(st);
+    RV.UI.showHelpFirstTime();
   }
 
   // Pick a saved game back up where it stopped, mid-computer-turn included.

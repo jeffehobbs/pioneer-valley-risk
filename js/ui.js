@@ -590,6 +590,53 @@
         onOk: function () { RV.Main.showMenu(); },
       });
     });
+    document.getElementById('btn-help').addEventListener('click', function () {
+      RV.Audio.play('click');
+      showHelp();
+    });
+  }
+
+  // How to play. Shown on the first new game, and from the ? button.
+  var HELP_KEY = 'pvrisk.seenHelp';
+  function helpBody() {
+    function phase(n, name, text) {
+      return '<li class="help-phase"><span class="help-num">' + n + '</span>' +
+        '<div><b>' + name + '</b><p>' + text + '</p></div></li>';
+    }
+    function terrain(cls, name, text) {
+      return '<li><span class="tag ' + cls + '">' + name + '</span><span>' + text + '</span></li>';
+    }
+    return '<div class="help">' +
+      '<p class="help-goal">Move your <b class="you">blue armies</b> across the entire Pioneer Valley.</p>' +
+      '<p class="help-sub">Each round has three stages:</p>' +
+      '<ol class="help-phases">' +
+        phase(1, 'REINFORCE', 'Place armies from your pool on your towns and cities. Be strategic about ' +
+          'where they go. You get one army for every three towns you hold (at least three), plus a bonus ' +
+          'for holding a whole county.') +
+        phase(2, 'ATTACK', 'Attack neighboring towns. The attacker rolls up to three dice, the defender ' +
+          'up to two. Highest die meets highest die, then second-highest meets second-highest. In each ' +
+          'pair the higher die wins and the other side loses an army. <b>The defender wins ties.</b>') +
+        phase(3, 'FORTIFY', 'Move armies once from one of your towns to another. They don’t need to be ' +
+          'next to each other, but must be linked by a chain of towns you hold.') +
+      '</ol>' +
+      '<p class="help-sub">The ground changes the dice:</p>' +
+      '<ul class="help-terrain">' +
+        terrain('mountain', 'MOUNTAIN', 'Defender rolls three dice; the best two count.') +
+        terrain('hills', 'HILLS', 'Defender adds +1 to its top die.') +
+        terrain('forest', 'FOREST', 'Defender loses at most one army per roll.') +
+        terrain('river', 'RIVER', 'Attacking across a bridge: attacker rolls two dice at most.') +
+      '</ul>' +
+      '<p class="help-end">Players alternate turns until every town has been captured. Good luck!</p>' +
+      '</div>';
+  }
+  function showHelp() {
+    try { localStorage.setItem(HELP_KEY, '1'); } catch (e) { /* private mode */ }
+    openModal({ title: 'HOW TO PLAY', body: helpBody(), okLabel: 'GOT IT', noCancel: true, wide: true });
+  }
+  function showHelpFirstTime() {
+    var seen = false;
+    try { seen = !!localStorage.getItem(HELP_KEY); } catch (e) { /* private mode */ }
+    if (!seen) showHelp();
   }
 
   // The computer speaks: a bubble under its name, and a line in the log.
@@ -636,6 +683,7 @@
     okBtn.classList.toggle('danger', !!o.danger);
     cancelBtn.textContent = o.cancelLabel || 'CANCEL';
     cancelBtn.style.display = o.noCancel ? 'none' : '';
+    modal.classList.toggle('wide', !!o.wide);
     modal.classList.remove('hidden');
     modalOpen = true;
 
@@ -950,6 +998,8 @@
 
   RV.UI = {
     init: init,
+    showHelp: showHelp,
+    showHelpFirstTime: showHelpFirstTime,
     get state() { return ui.state; },
     setState: function (st) {
       ui.state = st;
