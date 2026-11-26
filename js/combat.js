@@ -1,8 +1,8 @@
 /* Pioneer Valley Risk — combat: dice animation + resolution.
  *
  * Two ways in, one way out:
- *  - doAttack(st, from, to, onDone, opts)  one roll (you, or the Machine at 1X)
- *  - showBattle(st, battle, onDone, opts)  the Machine's rolls, already resolved
+ *  - doAttack(st, from, to, onDone, opts)  one roll (you, or the computer at 1X)
+ *  - showBattle(st, battle, onDone, opts)  the computer's rolls, already resolved
  * Both end in show(), which animates the dice, shows the ground's effect and
  * any battle summary, then logs, taunts, flashes and calls onDone.
  */
@@ -76,7 +76,7 @@
     show(st, info, onDone, opts || {});
   }
 
-  // The Machine's batch of rolls on one target (resolved by ai-turn).
+  // The computer's batch of rolls on one target (resolved by ai-turn).
   function showBattle(st, battle, onDone, opts) {
     var info = battle.info;
     info.last = battle.last;
@@ -208,10 +208,10 @@
     var s = info.summary;
     var msg;
     if (s) {
-      msg = 'The Machine hits ' + info.toName + ' from ' + info.fromName +
+      msg = 'The computer hits ' + info.toName + ' from ' + info.fromName +
         ': ' + s.rolls + ' rolls, it loses ' + info.atkLoss + ', you lose ' + info.defLoss;
     } else {
-      msg = (you ? 'You attack ' : 'The Machine attacks ') + info.toName + ' from ' + info.fromName +
+      msg = (you ? 'You attack ' : 'The computer attacks ') + info.toName + ' from ' + info.fromName +
         ': ' + last.atk.join(',') + ' vs ' + last.def.join(',');
     }
     if (info.captured) return msg + ' — ' + info.toName + ' captured!';
@@ -219,7 +219,7 @@
     return msg + ' — defender loses ' + info.defLoss + ', attacker loses ' + info.atkLoss + '.';
   }
 
-  // The Machine gloats when it takes a town (or a county), and sulks
+  // The computer gloats when it takes a town (or a county), and sulks
   // sometimes when you take one of its towns.
   function captureTalk(st, info) {
     var line = null;

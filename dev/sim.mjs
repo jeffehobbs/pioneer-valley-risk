@@ -1,4 +1,4 @@
-// Headless game simulation: the Machine vs a simple bot standing in for
+// Headless game simulation: the computer vs a simple bot standing in for
 // the human, through the real rules + AI modules.
 // Run: node dev/sim.mjs [gamesPerDifficulty]
 import { readFileSync } from 'node:fs';
@@ -17,7 +17,7 @@ for (const f of [
 }
 
 const N = RV.TERRITORIES.length;
-// BONUS=easy,normal,hard overrides the Machine's start bonus (for tuning)
+// BONUS=easy,normal,hard overrides the computer's start bonus (for tuning)
 if (process.env.BONUS) {
   const [e, n, h] = process.env.BONUS.split(',').map(Number);
   Object.assign(RV.Game.MACHINE_START_BONUS, { easy: e, normal: n, hard: h });
@@ -123,7 +123,7 @@ for (const difficulty of ['easy', 'normal', 'hard']) {
   }
   rounds.sort((a, b) => a - b);
   const median = rounds.length ? rounds[Math.floor(rounds.length / 2)] : '-';
-  console.log(`${difficulty.padEnd(6)} bot ${tally[0]}  machine ${tally[1]}  unfinished ${tally.draw}  ` +
+  console.log(`${difficulty.padEnd(6)} bot ${tally[0]}  computer ${tally[1]}  unfinished ${tally.draw}  ` +
     `(median ${median} rounds, ${(rolls / finished).toFixed(0)} rolls, ${(trades / finished).toFixed(1)} trades / game)`);
   if (tally.draw > GAMES * 0.2) { failures++; console.log(`  too many unfinished games on ${difficulty}`); }
 }

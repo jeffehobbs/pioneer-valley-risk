@@ -1,4 +1,4 @@
-/* Pioneer Valley Risk — the Machine talks.
+/* Pioneer Valley Risk — the computer talks.
  *
  * RV.Taunts.pick(kind, arg) returns a line or null. Callers decide when to
  * speak; this module only rations the lines so the same one doesn't repeat
@@ -7,7 +7,7 @@
 (function () {
   'use strict';
 
-  // Said when the Machine takes the town.
+  // Said when the computer takes the town.
   var TOWN = {
     'Charlemont':       'Charlemont is mine. Enjoy the view from down there.',
     'Shelburne':        'The Bridge of Flowers blooms red now.',
@@ -34,7 +34,7 @@
     'Southwick':        'Southwick falls. Connecticut wanted it back. Too late.',
     'Holyoke':          'Holyoke has fallen. Spike.',
     'West Springfield': 'West Springfield is mine. See you at the Big E.',
-    'Agawam':           'Agawam taken. Six Flags over the Machine.',
+    'Agawam':           'Agawam taken. Six Flags over the computer.',
     'Chicopee':         'Chicopee falls. Westover is cleared for my landing.',
     'Ludlow':           'Ludlow is mine. Pass the linguica.',
     'Springfield':      'Springfield has fallen. Nothing but net.',
@@ -44,7 +44,7 @@
   };
 
   var LINES = {
-    // the Machine takes a town it has already gloated about
+    // the computer takes a town it has already gloated about
     capture: [
       'Another one.',
       'Resistance is inefficient.',
@@ -61,7 +61,7 @@
       'That town was a decoy.',
       'Noted. Filed. Avenged later.',
     ],
-    // the Machine completes a county
+    // the computer completes a county
     county: {
       Franklin:  'All of Franklin County is mine. Pay the toll at the French King Bridge.',
       Hampshire: 'Hampshire County is mine. Five colleges, one dean.',

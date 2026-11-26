@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!-- Browser smoke test: loads the real game in an iframe and plays it
      through real click events (menu, reinforce, attack, advance modal,
-     end turn, the Machine's turns). Result goes to <title> and #out.
+     end turn, the computer's turns). Result goes to <title> and #out.
      Needs http (iframe access): run dev/smoke.sh -->
 <html>
 <head>
@@ -142,11 +142,11 @@
       await until(function () { return w.RV.UI.state; }, 2000, 'game start');
       var st = w.RV.UI.state;
       if (params.get('mode') === 'resume') {
-        // Play a turn, reload the page mid-Machine-turn, CONTINUE, and make
+        // Play a turn, reload the page mid-computer-turn, CONTINUE, and make
         // sure the same game carries on to your next turn.
         while (st.pool > 0) clickTown(w.RV.Game.territoriesOf(st, 0)[0], true);
         clickBtn('btn-end');
-        await until(function () { return st.turn === 1; }, 2000, 'Machine turn');
+        await until(function () { return st.turn === 1; }, 2000, 'computer turn');
         await wait(1500);
         var towns = JSON.stringify(w.RV.Main.readSave().territories.map(function (t) { return t.owner; }));
         await new Promise(function (res) { frame.addEventListener('load', res, { once: true }); w.location.reload(); });
@@ -157,19 +157,19 @@
         await until(function () { return doc.getElementById('menu-continue'); }, 2000, 'CONTINUE');
         clickBtn('menu-continue');
         var st3 = w.RV.UI.state;
-        if (!st3 || st3.turn !== 1) throw new Error('resumed game is not mid-Machine-turn');
+        if (!st3 || st3.turn !== 1) throw new Error('resumed game is not mid-computer-turn');
         if (JSON.stringify(st3.territories.map(function (t) { return t.owner; })) !== towns) throw new Error('resumed map differs');
-        await until(function () { return st3.turn === 0 || st3.over != null; }, 60000, 'resumed Machine turn');
+        await until(function () { return st3.turn === 0 || st3.over != null; }, 60000, 'resumed computer turn');
         if (errors.length) throw new Error('page errors');
         done('OK (resume mid-turn, round ' + st3.round + ')');
         return;
       }
       if (params.get('mode') === 'quit') {
-        // Quit while the Machine is mid-turn, start a new game, and make sure
+        // Quit while the computer is mid-turn, start a new game, and make sure
         // the old turn's loop doesn't leak into it.
         while (st.pool > 0) clickTown(w.RV.Game.territoriesOf(st, 0)[0]);
         clickBtn('btn-end');
-        await until(function () { return st.turn === 1; }, 2000, 'Machine turn');
+        await until(function () { return st.turn === 1; }, 2000, 'computer turn');
         await wait(900);
         clickBtn('btn-quit');
         if (!modalOpen() || doc.getElementById('modal-title').textContent !== 'QUIT GAME?') throw new Error('no quit confirm');
@@ -195,20 +195,20 @@
       while (st.over == null && st.round <= MAX_ROUNDS) {
         await humanTurn();
         if (st.over != null) break;
-        // every turn at a different Machine speed; every third one skipped
+        // every turn at a different computer speed; every third one skipped
         clickBtn('btn-speed');
         if (stats.aiTurns % 3 === 2) {
           await wait(700);
           doc.getElementById('board').dispatchEvent(new w.MouseEvent('click', { bubbles: true, clientX: 5, clientY: 5 }));
-          if (st.turn === 1 && !w.RV.AITurn.skipping()) throw new Error('click did not skip the Machine turn');
+          if (st.turn === 1 && !w.RV.AITurn.skipping()) throw new Error('click did not skip the computer turn');
           stats.skips++;
         }
-        await until(function () { return st.turn === 0 || st.over != null; }, 120000, 'Machine turn');
+        await until(function () { return st.turn === 0 || st.over != null; }, 120000, 'computer turn');
         stats.aiTurns++;
         stats.taunts = st.log.filter(function (l) { return typeof l === 'object' && l.kind === 'taunt'; }).length;
         await until(function () { return !w.RV.UI.busy() || st.over != null; }, 5000, 'idle');
         notes.push('round ' + st.round + ': you ' + w.RV.Game.territoriesOf(st, 0).length +
-          ' towns / ' + w.RV.Game.totalArmies(st, 0) + ' armies, machine ' +
+          ' towns / ' + w.RV.Game.totalArmies(st, 0) + ' armies, computer ' +
           w.RV.Game.territoriesOf(st, 1).length + ' / ' + w.RV.Game.totalArmies(st, 1));
       }
       if (st.over != null) {

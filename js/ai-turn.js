@@ -1,4 +1,4 @@
-/* Pioneer Valley Risk — runs the Machine's turn, step by step.
+/* Pioneer Valley Risk — runs the computer's turn, step by step.
  *
  * Speed (1X / 2X / 4X, remembered): at 1X every roll gets its own dice; at
  * 2X and 4X the rolls against one town are resolved together and shown as
@@ -49,7 +49,7 @@
         case 'trade': {
           var t = RV.Game.tradeCards(st);
           if (!t) { next(0); return; }
-          RV.addLog(st, 'The Machine trades in three cards for +' + t.armies + ' armies' +
+          RV.addLog(st, 'The computer trades in three cards for +' + t.armies + ' armies' +
             (t.bonusTown >= 0 ? ' (+2 on ' + st.territories[t.bonusTown].name + ')' : '') + '.');
           if (t.bonusTown >= 0) floatAt(t.bonusTown, '+2', '#7dff8a');
           if (!skipping) RV.Audio.play('trade');
@@ -62,7 +62,7 @@
         case 'place':
           RV.Game.placeArmies(st, action.to, action.n);
           floatAt(action.to, '+' + action.n, '#7dff8a');
-          RV.addLog(st, 'The Machine reinforces ' +
+          RV.addLog(st, 'The computer reinforces ' +
             st.territories[action.to].name + ' (+' + action.n + ').');
           if (!skipping) RV.Audio.play('move');
           RV.UI.refresh();
@@ -83,7 +83,7 @@
           var adv = st.advance;
           RV.Game.advance(st, action.n);
           if (adv && action.n > 0) {
-            RV.addLog(st, 'The Machine advances ' + action.n + ' more into ' +
+            RV.addLog(st, 'The computer advances ' + action.n + ' more into ' +
               st.territories[adv.to].name + '.');
           }
           RV.UI.refresh();
@@ -93,7 +93,7 @@
 
         case 'move':
           if (RV.Game.moveArmies(st, action.from, action.to, action.n)) {
-            RV.addLog(st, 'The Machine shifts ' + action.n + ' from ' +
+            RV.addLog(st, 'The computer shifts ' + action.n + ' from ' +
               st.territories[action.from].name + ' to ' +
               st.territories[action.to].name + '.');
             floatAt(action.to, '+' + action.n, st.players[1].color);
@@ -120,7 +120,7 @@
       }
     }
 
-    // Roll against one town for as long as the Machine keeps choosing it.
+    // Roll against one town for as long as the computer keeps choosing it.
     // The AI is asked after every roll, exactly as at 1X, so speed never
     // changes what it decides.
     function battle(from, to) {
@@ -151,7 +151,7 @@
       running = false;
       skipping = false;
       var conquered = st.conquered;
-      RV.addLog(st, 'The Machine ends its turn' + (conquered ? ' and draws a card.' : '.'));
+      RV.addLog(st, 'The computer ends its turn' + (conquered ? ' and draws a card.' : '.'));
       RV.Game.endTurn(st);
       RV.UI.setBusy(false);
       RV.Audio.play('turn');

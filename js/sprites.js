@@ -36,7 +36,7 @@
     q: '#9aa0b4', // pole metal
     n: '#f2c79a', // skin
     k: '#23232e', // dark outline
-    R: '#e33b32', // die rim: red (the Machine)
+    R: '#e33b32', // die rim: red (the computer)
     B: '#3b6de3', // die rim: blue (you)
     r: '#d64541', // roof
     a: '#f7f3e8', // house wall
@@ -369,7 +369,7 @@
   };
   for (var face = 1; face <= 6; face++) {
     P.SPR.dice[face] = {
-      red: makeDie(face, 'R'),  // the Machine's dice
+      red: makeDie(face, 'R'),  // the computer's dice
       blue: makeDie(face, 'B'), // your dice
     };
   }

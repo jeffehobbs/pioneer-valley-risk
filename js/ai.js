@@ -1,4 +1,4 @@
-/* Pioneer Valley Risk — the Machine (computer opponent).
+/* Pioneer Valley Risk — the computer (computer opponent).
  *
  * RV.AI.step(state) inspects the current state and returns ONE action:
  *   {type:'trade'}               (cash in a set of cards)
@@ -17,7 +17,7 @@
   // ratio: attack when (attackers - 1) >= defenders * ratio
   // regionAware: weight county completion / breaking the human's county
   // scatter: chance of a careless reinforcement
-  // terrainAware: how much the Machine respects mountains, hills, forests
+  // terrainAware: how much the computer respects mountains, hills, forests
   //   and rivers when sizing up a fight (0 = ignores them)
   // eagerTrade: cash in cards as soon as it has a set (else only at 5)
   var DIFF = {

@@ -11,9 +11,9 @@
   try { diff = localStorage.getItem('pvrisk.diff') || 'normal'; } catch (e) { /* private mode */ }
 
   var DIFF_TIPS = {
-    easy: 'The Machine is cautious and careless with its reinforcements.',
-    normal: 'The Machine attacks with the odds and chases county bonuses.',
-    hard: 'The Machine attacks at even odds and goes after your counties.',
+    easy: 'The computer is cautious and careless with its reinforcements.',
+    normal: 'The computer attacks with the odds and chases county bonuses.',
+    hard: 'The computer attacks at even odds and goes after your counties.',
   };
 
   var pressedStart = false;
@@ -33,6 +33,7 @@
   function readSave() {
     var st = load(SAVE_KEY);
     if (!st || !st.territories || st.territories.length !== RV.TERRITORIES.length || st.over != null) return null;
+    if (st.players && st.players[1]) st.players[1].name = 'COMPUTER';  // saves from before the rename
     return st;
   }
 
@@ -155,7 +156,7 @@
     RV.UI.setState(st);
   }
 
-  // Pick a saved game back up where it stopped, mid-Machine-turn included.
+  // Pick a saved game back up where it stopped, mid-computer-turn included.
   function resume(st) {
     RV.AITurn.reset();
     RV.Taunts.reset();

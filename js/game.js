@@ -22,7 +22,7 @@
 
   var START_ARMIES = 3;
   // The human always moves first, which is worth a lot in two-player Risk.
-  // The Machine gets extra starting armies to compensate, scaled by difficulty.
+  // The computer gets extra starting armies to compensate, scaled by difficulty.
   var MACHINE_START_BONUS = { easy: 0, normal: 2, hard: 6 };
   var PHASES = ['reinforce', 'attack', 'fortify'];
   var TRADE_VALUES = [4, 6, 8, 10, 12, 15];
@@ -58,7 +58,7 @@
       territories: territories,
       players: [
         { name: 'YOU', color: '#37c8ff', dice: 'blue' },
-        { name: 'THE MACHINE', color: '#ff4d4d', dice: 'red' },
+        { name: 'COMPUTER', color: '#ff4d4d', dice: 'red' },
       ],
       turn: 0,
       round: 1,
@@ -111,7 +111,7 @@
     if (p === 0) recordHistory(state);
     state.pool = reinforcements(state, p);
     var held = heldRegions(state, p).map(function (r) { return RV.REGIONS[r].name; });
-    addLog(state, (p === 0 ? 'Your turn' : 'The Machine\'s turn') +
+    addLog(state, (p === 0 ? 'Your turn' : 'The computer\'s turn') +
       ': +' + state.pool + ' armies' +
       (held.length ? ' (holds ' + held.join(', ') + ')' : '') + '.');
   }

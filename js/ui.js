@@ -52,7 +52,7 @@
     canvas.addEventListener('mousemove', onMove);
     canvas.addEventListener('mouseleave', function () { hover = -1; dirty = true; refreshHUD(); });
     document.addEventListener('keydown', onKey);
-    // Any click outside the controls during the Machine's turn skips its animations.
+    // Any click outside the controls during the computer's turn skips its animations.
     document.addEventListener('click', function (e) {
       if (!ui.state || ui.state.turn !== 1 || !RV.AITurn.running()) return;
       if (e.target.closest && e.target.closest('button, .modal, .gameover')) return;
@@ -626,10 +626,10 @@
     el.classList.add('nudge');
   }
 
-  // The Machine speaks: a bubble under its name, and a line in the log.
+  // The computer speaks: a bubble under its name, and a line in the log.
   function say(line) {
     if (!line || !ui.state) return;
-    RV.addLog(ui.state, { text: 'THE MACHINE: "' + line + '"', kind: 'taunt' });
+    RV.addLog(ui.state, { text: 'COMPUTER: "' + line + '"', kind: 'taunt' });
     var el = document.getElementById('taunt');
     el.textContent = line;
     el.classList.add('show');
@@ -639,7 +639,7 @@
     refreshHUD();
   }
 
-  // Your turn begins (after the Machine's).
+  // Your turn begins (after the computer's).
   function onHumanTurn() {
     var st = ui.state;
     if (!st || st.turn !== 0) return;
@@ -800,14 +800,14 @@
       document.getElementById('hud-' + side + '-name').textContent = p.name;
       document.getElementById('hud-' + side + '-stats').textContent =
         RV.Game.territoriesOf(st, i).length + ' TOWNS · ' + RV.Game.totalArmies(st, i) + ' ARMIES' +
-        // your own cards are on the side panel; the Machine's count is worth watching
+        // your own cards are on the side panel; the computer's count is worth watching
         (i === 1 ? ' · ' + st.hands[1].length + (st.hands[1].length === 1 ? ' CARD' : ' CARDS') : '');
     }
     var myTurn = st.turn === 0;
     var skipping = !myTurn && RV.AITurn.skipping();
     document.getElementById('turn-banner').textContent =
       st.over != null ? 'GAME OVER' :
-      (myTurn ? 'YOUR TURN' : (skipping ? 'SKIPPING...' : 'THE MACHINE IS PLOTTING...'));
+      (myTurn ? 'YOUR TURN' : (skipping ? 'SKIPPING...' : 'COMPUTER IS PLOTTING...'));
     var phaseNames = {
       reinforce: 'REINFORCE',
       attack: 'ATTACK',
@@ -949,7 +949,7 @@
     if (S.biggest) {
       var bb = S.biggest;
       big = st.territories[bb.from].name.toUpperCase() + ' &gt; ' + st.territories[bb.to].name.toUpperCase() +
-        '<small>ROUND ' + bb.round + ' · ' + (bb.by === 0 ? 'YOU' : 'THE MACHINE') + ' · ' +
+        '<small>ROUND ' + bb.round + ' · ' + (bb.by === 0 ? 'YOU' : 'COMPUTER') + ' · ' +
         (bb.atkLoss + bb.defLoss) + ' FELL' + (bb.captured ? ' · TAKEN' : ' · HELD') + '</small>';
     }
     var tide = tideRound(S.history, winner);
